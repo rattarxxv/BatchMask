@@ -1,0 +1,1074 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BatchMark</title>
+<meta name="description" content="แปะลายน้ำรูปทั้งชุดในตำแหน่งเดียวกัน ขนาดเท่าต้นฉบับ ทำงานในเครื่อง">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#FFF4F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1A0F12" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BatchMark">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Kanit:wght@400;700&family=Sarabun:wght@400;700&family=Chakra+Petch:wght@500;700&family=Pridi:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFF4F6; --surface:#FFFFFF; --surface-2:#FFE9EF; --ink:#2A1418; --muted:#7A5560; --line:#F4C7D3;
+  --accent:#D7193D; --accent-ink:#FFFFFF; --accent-soft:#FFD9E3; --danger:#9B1030;
+  --stage:#3B1220; --stage-mark:#C77D92; --stage-text:#F3C3D0; --chk1:#F6D3DC; --chk2:#FFF5F7;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1A0F12; --surface:#24151A; --surface-2:#2F1B22; --ink:#F7E8EC; --muted:#C49AA6; --line:#4A2A34;
+    --accent:#FF5A78; --accent-ink:#2A0A12; --accent-soft:#4A1F2C; --danger:#FF8FA3;
+    --stage:#0F080A; --stage-mark:#6B3B48; --stage-text:#C99AA7; --chk1:#3D2630; --chk2:#2C1A21;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1A0F12; --surface:#24151A; --surface-2:#2F1B22; --ink:#F7E8EC; --muted:#C49AA6; --line:#4A2A34;
+  --accent:#FF5A78; --accent-ink:#2A0A12; --accent-soft:#4A1F2C; --danger:#FF8FA3;
+  --stage:#0F080A; --stage-mark:#6B3B48; --stage-text:#C99AA7; --chk1:#3D2630; --chk2:#2C1A21;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none !important}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Anuphan","Noto Sans Thai",system-ui,sans-serif;font-size:15px;line-height:1.6}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button{font:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.app{max-width:1280px;margin:0 auto;padding:16px 14px 8px;display:grid;gap:16px}
+@media (min-width:920px){
+  .app{grid-template-columns:minmax(0,1fr) 370px;align-items:start;padding:24px 24px 12px;column-gap:24px}
+  .side{position:sticky;top:calc(16px + env(safe-area-inset-top,0px));max-height:calc(100vh - 110px);overflow:auto}
+}
+.top{grid-column:1/-1;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.brand{font-size:24px;font-weight:700;margin:0;letter-spacing:-.02em;line-height:1.2}
+.brand b{color:var(--accent);font-weight:700}
+.lede{margin:0;color:var(--muted);font-size:14px;max-width:70ch}
+.main{min-width:0}
+
+/* Stage */
+.stage{position:relative;background:var(--stage);border-radius:14px;min-height:min(52vh,520px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:30px 22px 18px;overflow:hidden}
+.stage.has-img{min-height:0}
+.stage.over{box-shadow:inset 0 0 0 2px var(--accent)}
+.marks i{position:absolute;width:20px;height:20px;border:0 solid var(--stage-mark)}
+.marks i:nth-child(1){top:11px;left:11px;border-top-width:1.5px;border-left-width:1.5px}
+.marks i:nth-child(2){top:11px;right:11px;border-top-width:1.5px;border-right-width:1.5px}
+.marks i:nth-child(3){bottom:11px;left:11px;border-bottom-width:1.5px;border-left-width:1.5px}
+.marks i:nth-child(4){bottom:11px;right:11px;border-bottom-width:1.5px;border-right-width:1.5px}
+#pv{display:block;max-width:100%;max-height:min(62vh,760px);width:auto;height:auto;touch-action:none;cursor:grab;
+  background:repeating-conic-gradient(var(--chk1) 0 25%,var(--chk2) 0 50%) 0 0/16px 16px;box-shadow:0 20px 40px rgba(0,0,0,.35)}
+#pv.dragging{cursor:grabbing}
+#pv.nodrag{cursor:default}
+.stage-hint{margin:0;text-align:center;font-size:13px;line-height:1.45;color:var(--stage-text);padding:0 18px;max-width:60ch}
+.drop{text-align:center;color:var(--stage-text);max-width:34ch}
+.drop-title{font-size:20px;font-weight:600;color:#FFE9EF;margin:0 0 4px}
+.drop-sub{margin:0 0 18px;font-size:14px}
+
+.strip-head{display:flex;justify-content:space-between;align-items:center;margin:14px 2px 6px;font-size:14px;color:var(--muted)}
+.strip-actions{display:flex;gap:6px}
+.link{background:none;border:0;color:var(--accent);font-size:14px;font-weight:600;padding:6px 6px;cursor:pointer;border-radius:6px}
+.link.danger{color:var(--danger)}
+.link:disabled{opacity:.45;cursor:not-allowed}
+.strip{display:flex;gap:12px;overflow-x:auto;padding:8px 8px 12px 2px}
+.thumb{position:relative;flex:none}
+.thumb-btn{position:relative;width:88px;height:88px;padding:0;border:1px solid var(--line);border-radius:10px;background:var(--stage);overflow:hidden;cursor:pointer;display:block}
+.thumb-btn canvas{width:100%;height:100%;object-fit:contain;display:block}
+.thumb.active .thumb-btn{outline:2.5px solid var(--accent);outline-offset:2px}
+.thumb-x{position:absolute;top:-7px;right:-7px;width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:16px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0}
+.thumb-msg{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;line-height:1.35;color:var(--stage-text);text-align:center;padding:6px;pointer-events:none}
+
+/* Controls */
+.side{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:2px 18px}
+.side[inert]{opacity:.55}
+.group{padding:16px 0 6px;border-top:1px solid var(--line)}
+.group:first-child{border-top:0}
+h2{font-size:16px;font-weight:600;margin:0 0 12px}
+.field{display:grid;gap:4px;margin:0 0 14px}
+.lab,.lab-row label{font-size:14px;color:var(--muted)}
+.lab-row{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:30px}
+.lab-end{display:flex;align-items:center;gap:6px}
+output{font-variant-numeric:tabular-nums;font-size:14px;font-weight:500;color:var(--ink)}
+input[type=text],select{height:44px;width:100%;padding:0 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);color:var(--ink);font:inherit;font-size:16px}
+input[type=color]{width:100%;height:44px;padding:4px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);cursor:pointer}
+input:disabled,select:disabled{opacity:.55;cursor:not-allowed}
+input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:30px}
+.ends{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-top:-6px}
+.check-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px}
+.check{display:flex;gap:10px;align-items:center;font-size:14.5px;cursor:pointer;min-height:32px}
+.check input{width:20px;height:20px;accent-color:var(--accent);margin:0;flex:none}
+.row2{display:flex;gap:10px;align-items:end}
+.grow{flex:1;min-width:0}
+.field.color{width:100px;flex:none}
+.hint{font-size:13px;color:var(--muted);margin:0 0 12px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:3px;margin-bottom:12px}
+.seg button{height:38px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-weight:600;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.seg button:disabled{opacity:.45;cursor:not-allowed}
+.lock{width:30px;height:30px;flex:none;border:0;border-radius:7px;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;padding:0}
+.lock:hover{background:var(--surface-2)}
+.lock[aria-pressed="true"]{color:var(--accent);background:var(--accent-soft)}
+.logo-box{height:100px;border:1px dashed var(--line);border-radius:10px;display:grid;place-items:center;margin-bottom:10px;overflow:hidden;
+  background:repeating-conic-gradient(var(--chk1) 0 25%,var(--chk2) 0 50%) 0 0/14px 14px;color:var(--muted);font-size:13.5px}
+.logo-box canvas{max-width:92%;max-height:86px}
+.row-btns{display:flex;gap:8px;margin-bottom:6px}
+.btn{height:44px;padding:0 18px;border-radius:10px;font-weight:600;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer;white-space:nowrap}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+.pos-wrap{display:grid;gap:8px;justify-items:start;margin-bottom:14px}
+.pos{display:grid;grid-template-columns:repeat(5,36px);grid-template-rows:repeat(3,32px);gap:2px;padding:4px;border:1.5px solid var(--ink);border-radius:5px;background:var(--surface-2)}
+.pos.port{grid-template-columns:repeat(3,28px);grid-template-rows:repeat(5,30px)}
+.pos button{border:0;background:transparent;border-radius:4px;display:grid;place-items:center;cursor:pointer;padding:0}
+.pos button::before{content:"";width:8px;height:8px;border-radius:50%;border:1.5px solid var(--muted)}
+.pos button:hover:not(:disabled){background:var(--accent-soft)}
+.pos button[aria-pressed="true"]::before{width:12px;height:12px;background:var(--accent);border-color:var(--accent)}
+.pos button:disabled{cursor:not-allowed}
+.pos-note{font-size:13.5px;color:var(--muted);margin:0}
+.is-off{opacity:.4;pointer-events:none}
+
+/* Save bar */
+.savebar{position:sticky;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px))}
+.prog{position:absolute;top:-1px;left:0;height:2px;width:0;background:var(--accent);transition:width .2s}
+.savebar-in{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap}
+.status{margin:0;font-size:14px;color:var(--muted);flex:1 1 200px;min-width:0}
+.save-btns{display:flex;gap:8px;flex:1 1 auto;justify-content:flex-end}
+@media (max-width:520px){ .save-btns .btn{flex:1;padding:0 12px} }
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion: reduce){ .prog{transition:none} }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1 class="brand">Batch<b>Mark</b></h1>
+    <p class="lede">แปะลายน้ำรูปทั้งชุดในตำแหน่งเดียวกัน ขนาดเท่าต้นฉบับ ประมวลผลในเครื่องคุณ ไม่มีการอัปโหลดรูปไปที่ไหน</p>
+  </header>
+
+  <main class="main">
+    <section class="stage" id="stage" aria-label="ตัวอย่าง">
+      <div class="marks" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div class="drop" id="drop">
+        <p class="drop-title">ลากรูปมาวางตรงนี้</p>
+        <p class="drop-sub">เลือกได้ทีละหลายรูป (JPG, PNG, WebP)</p>
+        <button class="btn primary" type="button" id="pickBtn">เลือกรูป</button>
+      </div>
+      <canvas id="pv" hidden tabindex="0" aria-label="ตัวอย่างพร้อมลายน้ำ แตะหรือลากเพื่อย้าย ใช้ปุ่มลูกศรขยับทีละนิด"></canvas>
+      <p class="stage-hint" id="stageHint" hidden></p>
+    </section>
+
+    <div class="strip-head" id="stripHead" hidden>
+      <span id="countLabel"></span>
+      <span class="strip-actions">
+        <button class="link" type="button" id="addBtn">เพิ่มรูป</button>
+        <button class="link danger" type="button" id="clearBtn">ล้างทั้งหมด</button>
+      </span>
+    </div>
+    <div class="strip" id="strip" role="list" aria-label="รูปทั้งหมด"></div>
+  </main>
+
+  <aside class="side" id="side" aria-label="ตั้งค่าลายน้ำ">
+    <section class="group">
+      <h2>ลายน้ำ</h2>
+      <div class="lab-row"><span class="lab">ชนิด</span><span class="lab-end"><button class="lock" type="button" data-lock="mode"></button></span></div>
+      <div class="seg" role="group" aria-label="ชนิดลายน้ำ">
+        <button type="button" data-mode="text" data-lk="mode">ข้อความ</button>
+        <button type="button" data-mode="logo" data-lk="mode">โลโก้</button>
+      </div>
+      <div id="textPanel">
+        <div class="field">
+          <div class="lab-row"><label for="text">ข้อความ</label><span class="lab-end"><button class="lock" type="button" data-lock="text"></button></span></div>
+          <input type="text" id="text" data-key="text" maxlength="80" autocomplete="off">
+        </div>
+        <div class="row2">
+          <div class="field grow">
+            <div class="lab-row"><label for="fontSel">ฟอนต์</label><span class="lab-end"><button class="lock" type="button" data-lock="font"></button></span></div>
+            <select id="fontSel" data-key="font"></select>
+          </div>
+          <div class="field color">
+            <div class="lab-row"><label for="color">สี</label><span class="lab-end"><button class="lock" type="button" data-lock="color"></button></span></div>
+            <input type="color" id="color" data-key="color">
+          </div>
+        </div>
+        <div class="check-row"><label class="check"><input type="checkbox" data-key="bold"> ตัวหนา</label><button class="lock" type="button" data-lock="bold"></button></div>
+      </div>
+      <div id="logoPanel" hidden>
+        <div class="lab-row"><span class="lab">โลโก้</span><span class="lab-end"><button class="lock" type="button" data-lock="logo"></button></span></div>
+        <div class="logo-box"><canvas id="logoPrev" hidden></canvas><span id="logoEmpty">ยังไม่ได้เลือกโลโก้</span></div>
+        <div class="row-btns">
+          <button class="btn" type="button" id="logoBtn" data-lk="logo">เลือกโลโก้</button>
+          <button class="btn" type="button" id="logoDel" data-lk="logo" hidden>เอาออก</button>
+        </div>
+        <p class="hint">PNG พื้นใสที่ความละเอียดสูงจะคมที่สุด</p>
+      </div>
+      <div class="check-row"><label class="check"><input type="checkbox" data-key="shadow"> ใส่เงาจาง ๆ ให้อ่านง่ายบนพื้นสว่าง</label><button class="lock" type="button" data-lock="shadow"></button></div>
+    </section>
+
+    <section class="group">
+      <h2>ความเข้มและการหมุน</h2>
+      <div class="field">
+        <div class="lab-row"><label for="opacity">ความเข้ม</label><span class="lab-end"><output id="opacityOut" for="opacity"></output><button class="lock" type="button" data-lock="opacity"></button></span></div>
+        <input type="range" id="opacity" data-key="opacity" min="5" max="100" step="1">
+        <div class="ends" aria-hidden="true"><span>จาง</span><span>เข้ม</span></div>
+      </div>
+      <div class="field">
+        <div class="lab-row"><label for="rotate">หมุน</label><span class="lab-end"><output id="rotateOut" for="rotate"></output><button class="lock" type="button" data-lock="rotate"></button></span></div>
+        <input type="range" id="rotate" data-key="rotate" min="-90" max="90" step="1">
+      </div>
+    </section>
+
+    <section class="group">
+      <h2>ขนาดและตำแหน่ง</h2>
+      <div class="seg" id="orientSeg" role="group" aria-label="ตั้งค่าให้รูปแนวไหน">
+        <button type="button" data-orient="land">แนวนอน</button>
+        <button type="button" data-orient="port">แนวตั้ง</button>
+      </div>
+      <p class="hint">รูปแนวนอนกับแนวตั้งตั้งขนาดและตำแหน่งแยกกัน แตะรูปย่อหรือแท็บนี้เพื่อสลับ (รูปจัตุรัสนับเป็นแนวนอน)</p>
+      <div class="field">
+        <div class="lab-row"><label for="size">ขนาด</label><span class="lab-end"><output id="sizeOut" for="size"></output><button class="lock" type="button" data-lock="size"></button></span></div>
+        <input type="range" id="size" data-okey="size" min="2" max="100" step="1">
+      </div>
+      <div class="lab-row"><span class="lab">ตำแหน่ง</span><span class="lab-end"><button class="lock" type="button" data-lock="pos"></button></span></div>
+      <div class="pos-wrap" id="posWrap">
+        <div class="pos" id="pos" role="group" aria-label="ตำแหน่งลายน้ำ"></div>
+        <p class="pos-note" id="posNote"></p>
+        <button class="link" type="button" id="copyPos" data-lk="pos"></button>
+      </div>
+      <div id="xyWrap">
+        <div class="field">
+          <div class="lab-row"><label for="posX">ขยับแนวนอน (ซ้ายไปขวา)</label><output id="posXOut" for="posX"></output></div>
+          <input type="range" id="posX" min="0" max="100" step="0.5">
+        </div>
+        <div class="field">
+          <div class="lab-row"><label for="posY">ขยับแนวตั้ง (บนลงล่าง)</label><output id="posYOut" for="posY"></output></div>
+          <input type="range" id="posY" min="0" max="100" step="0.5">
+        </div>
+      </div>
+      <div class="field" id="marginField">
+        <div class="lab-row"><label for="margin">ระยะห่างจากขอบ</label><span class="lab-end"><output id="marginOut" for="margin"></output><button class="lock" type="button" data-lock="margin"></button></span></div>
+        <input type="range" id="margin" data-okey="margin" min="0" max="25" step="0.5">
+      </div>
+      <div class="check-row"><label class="check"><input type="checkbox" data-key="tile"> ปูลายน้ำซ้ำทั้งรูป (ครอปออกยาก)</label><button class="lock" type="button" data-lock="tile"></button></div>
+      <div class="field" id="gapField" hidden>
+        <div class="lab-row"><label for="gap">ระยะห่างระหว่างลายน้ำ</label><span class="lab-end"><output id="gapOut" for="gap"></output><button class="lock" type="button" data-lock="gap"></button></span></div>
+        <input type="range" id="gap" data-key="gap" min="0" max="300" step="5">
+      </div>
+    </section>
+
+    <section class="group">
+      <h2>ไฟล์ที่บันทึก</h2>
+      <div class="field">
+        <div class="lab-row"><label for="format">รูปแบบไฟล์</label><span class="lab-end"><button class="lock" type="button" data-lock="format"></button></span></div>
+        <select id="format" data-key="format">
+          <option value="same">ตามไฟล์ต้นฉบับ</option>
+          <option value="jpeg">JPG</option>
+          <option value="png">PNG (ไม่สูญเสียคุณภาพ ไฟล์ใหญ่)</option>
+          <option value="webp">WebP</option>
+        </select>
+      </div>
+      <div class="field" id="qField">
+        <div class="lab-row"><label for="quality">คุณภาพ JPG / WebP</label><span class="lab-end"><output id="qOut" for="quality"></output><button class="lock" type="button" data-lock="quality"></button></span></div>
+        <input type="range" id="quality" data-key="quality" min="80" max="100" step="1">
+      </div>
+      <div class="field">
+        <div class="lab-row"><label for="suffix">ต่อท้ายชื่อไฟล์</label><span class="lab-end"><button class="lock" type="button" data-lock="suffix"></button></span></div>
+        <input type="text" id="suffix" data-key="suffix" maxlength="30" placeholder="เว้นว่างได้" autocomplete="off">
+      </div>
+      <p class="hint">ขนาดพิกเซลเท่าต้นฉบับทุกรูป คุณภาพ 95 ขึ้นไปแทบแยกจากต้นฉบับไม่ออก</p>
+      <p class="hint">กดไอคอนแม่กุญแจเพื่อล็อกค่านั้น ค่าที่ล็อกจะแก้ไม่ได้และไม่ถูกคืนค่าเริ่มต้น</p>
+      <div class="row-btns">
+        <button class="link" type="button" id="resetBtn">คืนค่าเริ่มต้น</button>
+        <button class="link" type="button" id="unlockAll">ปลดล็อกทั้งหมด</button>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<div class="savebar">
+  <div class="prog" id="prog"></div>
+  <div class="savebar-in">
+    <p class="status" id="status" role="status" aria-live="polite">ยังไม่มีรูป</p>
+    <div class="save-btns">
+      <button class="btn" type="button" id="cancelBtn" hidden>ยกเลิก</button>
+      <button class="btn" type="button" id="saveEach" hidden>บันทึกทีละรูป</button>
+      <button class="btn primary" type="button" id="saveAll" disabled>บันทึกทั้งหมด</button>
+      <button class="btn" type="button" id="zipBtn" hidden>ZIP</button>
+      <button class="btn primary" type="button" id="shareBtn" hidden>บันทึก / แชร์</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileIn" class="vh" accept="image/*" multiple tabindex="-1" aria-hidden="true">
+<input type="file" id="logoIn" class="vh" accept="image/png,image/webp,image/jpeg,image/svg+xml" tabindex="-1" aria-hidden="true">
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const FONTS = { 'Kanit':[400,700], 'Sarabun':[400,700], 'Chakra Petch':[500,700], 'Pridi':[400,600], 'Anuphan':[400,700] };
+const DEF = { mode:'text', text:'© ร้านของฉัน', font:'Kanit', bold:true, color:'#ffffff', shadow:true,
+  size:30, opacity:60, rotate:0, anchor:'b-r', px:0.85, py:0.9, margin:3, tile:false, gap:80,
+  format:'same', quality:95, suffix:'_wm',
+  port:{ size:45, anchor:'b-r', px:0.8, py:0.92, margin:3 } };
+const SKEY = 'wm.settings.v1', LKEY = 'wm.logo.v1', KKEY = 'wm.locks.v1';
+const THUMB = 360, PV = 1800;
+const VL = { t:'บน', t2:'ค่อนบน', m:'กลาง', b2:'ค่อนล่าง', b:'ล่าง' };
+const HL = { l:'ซ้าย', l2:'ค่อนซ้าย', c:'กลาง', r2:'ค่อนขวา', r:'ขวา' };
+const GRID = { land:{ rows:['t','m','b'], cols:['l','l2','c','r2','r'] }, port:{ rows:['t','t2','m','b2','b'], cols:['l','c','r'] } };
+const anchorLabel = a => { const [v, h] = a.split('-'); return (v === 'm' && h === 'c') ? 'กึ่งกลาง' : (VL[v] || '') + (HL[h] || ''); };
+const ANCHOR_RE = /^(t|t2|m|b2|b)-(l|l2|c|r2|r)$/;
+const OKEYS = new Set(['size', 'pos', 'margin']);
+const LOCK_NAMES = { mode:'ชนิดลายน้ำ', text:'ข้อความ', font:'ฟอนต์', color:'สี', bold:'ตัวหนา', logo:'โลโก้', shadow:'เงา',
+  opacity:'ความเข้ม', rotate:'การหมุน', size:'ขนาด', pos:'ตำแหน่ง', margin:'ระยะห่างจากขอบ', tile:'ปูลายน้ำทั้งรูป',
+  gap:'ระยะห่างระหว่างลายน้ำ', format:'รูปแบบไฟล์', quality:'คุณภาพ JPG / WebP', suffix:'ต่อท้ายชื่อไฟล์' };
+const SVG_A = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/>';
+const ICON_LOCK = SVG_A + '<path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+const ICON_OPEN = SVG_A + '<path d="M8 11V7a4 4 0 0 1 7.7-1.5"/></svg>';
+
+/* ---------- state ---------- */
+const S = JSON.parse(JSON.stringify(DEF));
+try {
+  const raw = localStorage.getItem(SKEY);
+  if (raw) {
+    const o = JSON.parse(raw);
+    for (const k in DEF) if (k in o && typeof o[k] === typeof DEF[k]) S[k] = o[k];
+    S.port = Object.assign({}, DEF.port, (o.port && typeof o.port === 'object') ? o.port : {});
+  }
+} catch (e) {}
+if (!FONTS[S.font]) S.font = DEF.font;
+if (/^[tmb][lcr]$/.test(S.anchor)) S.anchor = S.anchor[0] + '-' + S.anchor[1];
+for (const o of [S, S.port]) if (o.anchor !== 'custom' && !ANCHOR_RE.test(o.anchor)) o.anchor = 'b-r';
+let L = {};
+try { const r = JSON.parse(localStorage.getItem(KKEY) || '{}'); if (r && typeof r === 'object') L = r; } catch (e) {}
+
+let logo = null;
+const items = [];
+let current = -1, pvSrc = null, lastRes = null, busy = false, blobBlocked = false, uid = 0, noSave = false;
+let cancelReq = false;
+const inClaude = !!(window.claude && typeof window.claude.use === 'function');
+const shareFiles = !inClaude && typeof navigator.share === 'function' && typeof navigator.canShare === 'function'
+  && window.matchMedia && matchMedia('(pointer: coarse)').matches;
+let pending = null;
+let dragging = false, dragOff = { x:0, y:0 };
+let editO = 'land';
+const E = () => editO === 'port' ? S.port : S;
+const PO = (W, H) => H > W ? S.port : S;
+const orientOf = (W, H) => H > W ? 'port' : 'land';
+const lockKey = (k, o) => OKEYS.has(k) ? `${k}@${o || editO}` : k;
+const isLocked = (k, o) => !!L[lockKey(k, o)];
+const pv = $('pv'), pctx = pv.getContext('2d');
+const mctx = document.createElement('canvas').getContext('2d');
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const tick = () => new Promise(r => setTimeout(r, 0));
+
+/* ---------- watermark geometry (relative, so every file matches) ---------- */
+function fontStr(px){ return `${FONTS[S.font][S.bold ? 1 : 0]} ${px}px "${S.font}", "Anuphan", sans-serif`; }
+function ensureFont(){
+  if (!document.fonts || !document.fonts.load) return Promise.resolve();
+  return document.fonts.load(fontStr(48), (S.text || '') + 'กขAa').catch(() => {});
+}
+function wmBox(W, H){
+  const tw = Math.max(1, PO(W, H).size / 100 * W);
+  if (S.mode === 'logo') {
+    if (!logo) return null;
+    return { kind:'logo', w:tw, h:tw * logo.h / logo.w };
+  }
+  const t = (S.text || '').trim();
+  if (!t) return null;
+  mctx.font = fontStr(100);
+  const m = mctx.measureText(t);
+  const asc = m.actualBoundingBoxAscent || 80, desc = m.actualBoundingBoxDescent || 25;
+  const k = tw / Math.max(1, m.width);
+  return { kind:'text', w:tw, h:(asc + desc) * k, fs:100 * k, asc:asc * k, text:t };
+}
+function layout(W, H, b){
+  const r = S.rotate * Math.PI / 180, c = Math.abs(Math.cos(r)), s = Math.abs(Math.sin(r));
+  const bw = b.w * c + b.h * s, bh = b.w * s + b.h * c;
+  if (S.tile) {
+    const sx = Math.max(2, bw * (1 + S.gap / 100)), sy = Math.max(2, bh * (1 + S.gap / 100));
+    const cols = Math.ceil(W / sx) + 2, rows = Math.ceil(H / sy) + 2, pts = [];
+    const x0 = W / 2 - Math.floor(cols / 2) * sx, y0 = H / 2 - Math.floor(rows / 2) * sy;
+    for (let rI = 0; rI <= rows && pts.length < 6000; rI++) {
+      const off = (rI % 2) ? sx / 2 : 0;
+      for (let cI = -1; cI <= cols; cI++) pts.push({ x:x0 + cI * sx + off, y:y0 + rI * sy });
+    }
+    return { bw, bh, pts };
+  }
+  const P = PO(W, H);
+  if (P.anchor === 'custom') return { bw, bh, pts:[{ x:P.px * W, y:P.py * H }] };
+  const m = P.margin / 100 * Math.min(W, H), [v, h] = P.anchor.split('-');
+  const xl = m + bw / 2, xr = W - m - bw / 2, xc = W / 2;
+  const yt = m + bh / 2, yb = H - m - bh / 2, yc = H / 2;
+  const x = h === 'l' ? xl : h === 'r' ? xr : h === 'l2' ? (xl + xc) / 2 : h === 'r2' ? (xr + xc) / 2 : xc;
+  const y = v === 't' ? yt : v === 'b' ? yb : v === 't2' ? (yt + yc) / 2 : v === 'b2' ? (yb + yc) / 2 : yc;
+  return { bw, bh, pts:[{ x, y }] };
+}
+function paint(ctx, b){
+  if (b.kind === 'logo') { ctx.drawImage(logo.src, -b.w / 2, -b.h / 2, b.w, b.h); return; }
+  ctx.font = fontStr(b.fs); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = S.color; ctx.fillText(b.text, 0, -b.h / 2 + b.asc);
+}
+function drawWM(ctx, W, H){
+  const b = wmBox(W, H); if (!b) return null;
+  const Lr = layout(W, H, b), r = S.rotate * Math.PI / 180;
+  ctx.save();
+  ctx.globalAlpha = S.opacity / 100;
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  if (S.shadow) { ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = Math.max(1, b.h * 0.14); ctx.shadowOffsetY = Math.max(0.5, b.h * 0.03); }
+  for (const p of Lr.pts) { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(r); paint(ctx, b); ctx.restore(); }
+  ctx.restore();
+  return { b, L:Lr };
+}
+function outline(ctx, res, W){
+  const p = res.L.pts[0], b = res.b, lw = Math.max(1, W / 450);
+  ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(S.rotate * Math.PI / 180);
+  ctx.lineWidth = lw * 2.2; ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.strokeRect(-b.w / 2, -b.h / 2, b.w, b.h);
+  ctx.lineWidth = lw; ctx.strokeStyle = '#ffffff'; ctx.setLineDash([lw * 5, lw * 4]); ctx.strokeRect(-b.w / 2, -b.h / 2, b.w, b.h);
+  ctx.restore();
+}
+
+/* ---------- image decoding ---------- */
+function viaImg(blob){
+  return new Promise((res, rej) => {
+    let url; try { url = URL.createObjectURL(blob); } catch (e) { rej(e); return; }
+    const img = new Image();
+    img.onload = () => {
+      const w = img.naturalWidth, h = img.naturalHeight;
+      if (!w || !h) { URL.revokeObjectURL(url); rej(new Error('empty')); return; }
+      res({ src:img, w, h, close(){ img.onload = img.onerror = null; URL.revokeObjectURL(url); } });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('img')); };
+    img.src = url;
+  });
+}
+async function viaBitmap(blob){
+  let b;
+  try { b = await createImageBitmap(blob, { imageOrientation:'from-image' }); }
+  catch (e) { b = await createImageBitmap(blob); }
+  return { src:b, w:b.width, h:b.height, close(){ if (b.close) b.close(); } };
+}
+async function decodeBlob(blob){
+  if (!blobBlocked) {
+    try { return await viaImg(blob); }
+    catch (e) { const d = await viaBitmap(blob); blobBlocked = true; return d; }
+  }
+  return viaBitmap(blob);
+}
+function scaled(src, w, h, max){
+  const k = Math.min(1, max / Math.max(w, h));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+  const x = c.getContext('2d'); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+  x.drawImage(src, 0, 0, c.width, c.height);
+  return c;
+}
+
+const vErr = code => Object.assign(new Error(code), { code });
+
+/* ---------- preview ---------- */
+let raf = 0;
+function renderPreview(){
+  cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(() => {
+    if (!pvSrc) return;
+    const W = pv.width, H = pv.height;
+    pctx.clearRect(0, 0, W, H);
+    pctx.drawImage(pvSrc, 0, 0);
+    lastRes = drawWM(pctx, W, H);
+    if (dragging && lastRes && !S.tile) outline(pctx, lastRes, W);
+    syncXY();
+  });
+}
+let thT = 0;
+function scheduleThumbs(){ clearTimeout(thT); thT = setTimeout(renderThumbs, 120); }
+function renderThumbs(){ for (const it of items) paintThumb(it); }
+function paintThumb(it){
+  if (!it.thumb) return;
+  const cv = it.cv;
+  if (cv.width !== it.thumb.width || cv.height !== it.thumb.height) { cv.width = it.thumb.width; cv.height = it.thumb.height; }
+  const c = cv.getContext('2d');
+  c.clearRect(0, 0, cv.width, cv.height); c.drawImage(it.thumb, 0, 0);
+  drawWM(c, cv.width, cv.height);
+}
+let svT = 0;
+function saveSettings(){
+  clearTimeout(svT);
+  svT = setTimeout(() => { try { localStorage.setItem(SKEY, JSON.stringify(S)); } catch (e) {} }, 300);
+}
+function saveLocks(){ try { localStorage.setItem(KKEY, JSON.stringify(L)); } catch (e) {} }
+function clearPending(){ if (!pending) return; pending = null; refreshCounts(true); }
+function changed(){ renderPreview(); scheduleThumbs(); saveSettings(); clearPending(); }
+
+function showPreview(c){
+  pvSrc = c; pv.width = c.width; pv.height = c.height; lastRes = null;
+  editO = orientOf(c.width, c.height); syncUI();
+  pv.hidden = false; $('drop').hidden = true; $('stageHint').hidden = false; $('stage').classList.add('has-img');
+  renderPreview();
+}
+function resetStage(){
+  pvSrc = null; lastRes = null; pv.hidden = true; $('drop').hidden = false; $('stageHint').hidden = true; $('stage').classList.remove('has-img');
+  syncUI(true);
+}
+
+/* ---------- items ---------- */
+const IMAGE_EXT = /\.(jpe?g|png|webp|gif|bmp|avif|heic|heif)$/i;
+const isImageFile = f => (f.type && f.type.startsWith('image/')) || IMAGE_EXT.test(f.name || '');
+function errText(){ return 'เปิดไฟล์นี้ไม่ได้'; }
+function makeThumbEl(it){
+  const wrap = document.createElement('div'); wrap.className = 'thumb'; wrap.setAttribute('role', 'listitem');
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'thumb-btn'; b.setAttribute('aria-label', 'ดูตัวอย่าง ' + it.name);
+  const cv = document.createElement('canvas'); cv.width = 2; cv.height = 2; b.appendChild(cv);
+  const msg = document.createElement('span'); msg.className = 'thumb-msg'; msg.textContent = 'กำลังเปิด'; b.appendChild(msg);
+  const x = document.createElement('button'); x.type = 'button'; x.className = 'thumb-x'; x.setAttribute('aria-label', 'เอา ' + it.name + ' ออก'); x.textContent = '×';
+  b.addEventListener('click', () => select(items.indexOf(it)));
+  x.addEventListener('click', () => removeItem(it));
+  wrap.append(b, x);
+  it.el = wrap; it.btn = b; it.cv = cv; it.msg = msg;
+  return wrap;
+}
+let loadQ = Promise.resolve();
+function addFiles(list){
+  const files = [...list].filter(isImageFile);
+  if (!files.length) { setStatus('ไฟล์ที่เลือกไม่ใช่รูปภาพ'); return; }
+  clearPending();
+  const added = files.map(f => ({ id:++uid, file:f, name:f.name || ('file-' + uid), kind:'image', thumb:null, err:false, port:false }));
+  for (const it of added) { items.push(it); $('strip').appendChild(makeThumbEl(it)); }
+  refreshCounts(false);
+  loadQ = loadQ.then(() => loadThumbs(added));
+}
+async function loadThumbs(list){
+  for (let i = 0; i < list.length; i++) {
+    const it = list[i];
+    if (!items.includes(it)) continue;
+    if (!busy) setStatus(`กำลังเปิดรูป ${i + 1}/${list.length}`);
+    try {
+      const d = await decodeBlob(it.file);
+      it.port = d.h > d.w;
+      it.thumb = scaled(d.src, d.w, d.h, THUMB);
+      if (current < 0 && items.includes(it)) { current = items.indexOf(it); markActive(); showPreview(scaled(d.src, d.w, d.h, PV)); }
+      d.close();
+      it.msg.remove();
+      paintThumb(it);
+      syncOrient();
+    } catch (e) {
+      it.err = true; it.msg.textContent = errText(e);
+    }
+    await tick();
+  }
+  refreshCounts(true);
+}
+let selTok = 0;
+async function select(i){
+  const it = items[i]; if (!it || it.err || !it.thumb) return;
+  current = i; markActive();
+  const tok = ++selTok;
+  try {
+    let c;
+    { const d = await decodeBlob(it.file); c = scaled(d.src, d.w, d.h, PV); d.close(); }
+    if (tok !== selTok) return;
+    showPreview(c);
+  } catch (e) { setStatus('เปิดไฟล์นี้ไม่ได้'); }
+}
+function markActive(){
+  items.forEach((it, i) => { it.el.classList.toggle('active', i === current); it.btn.setAttribute('aria-current', i === current ? 'true' : 'false'); });
+}
+function removeItem(it){
+  if (busy) return;
+  const idx = items.indexOf(it); if (idx < 0) return;
+  clearPending();
+  items.splice(idx, 1); it.el.remove(); it.thumb = null;
+  if (!items.length) { current = -1; resetStage(); }
+  else if (idx === current) {
+    current = -1;
+    let n = items.findIndex((x, j) => j >= idx && !x.err && x.thumb);
+    if (n < 0) n = items.findIndex(x => !x.err && x.thumb);
+    if (n >= 0) select(n); else resetStage();
+  } else if (idx < current) current--;
+  markActive(); refreshCounts(true);
+}
+function clearAll(){
+  if (busy) return;
+  pending = null;
+  items.length = 0; $('strip').innerHTML = ''; current = -1; resetStage(); refreshCounts(true);
+}
+function readyItems(){ return items.filter(it => !it.err && it.thumb); }
+function describe(list){ return `${list.length} รูป`; }
+function refreshCounts(updateStatus){
+  syncOrient();
+  const ready = readyItems(), n = ready.length, bad = items.filter(it => it.err).length;
+  $('stripHead').hidden = !items.length;
+  $('countLabel').textContent = items.length ? `${items.length} รูป` : '';
+  const all = $('saveAll'), each = $('saveEach');
+  all.disabled = busy || n === 0;
+  all.textContent = shareFiles ? (n > 1 ? `ใส่ลายน้ำ ${n} รูป` : 'ใส่ลายน้ำ') : n > 1 ? `บันทึกทั้งหมด ${n} รูป (ZIP)` : 'บันทึกรูป';
+  each.hidden = noSave || n < 2 || shareFiles || !!pending; each.disabled = busy;
+  all.hidden = noSave || !!pending;
+  $('shareBtn').hidden = !pending; $('shareBtn').disabled = busy;
+  $('zipBtn').hidden = !pending || pending.length < 2; $('zipBtn').disabled = busy;
+  if (pending) $('shareBtn').textContent = `บันทึก / แชร์ ${pending.length} รูป`;
+  $('cancelBtn').hidden = !busy;
+  $('addBtn').disabled = $('clearBtn').disabled = busy;
+  if (updateStatus && !busy && !noSave) {
+    setStatus(n ? `${describe(ready)} พร้อมใส่ลายน้ำ` + (bad ? ` (${bad} รูปเปิดไม่ได้ จะถูกข้าม)` : '') : (bad ? `${bad} รูปเปิดไม่ได้` : 'ยังไม่มีรูป'));
+  }
+}
+function setStatus(t){ $('status').textContent = t; }
+function setProgress(f){ $('prog').style.width = f > 0 ? (Math.min(1, f) * 100).toFixed(1) + '%' : '0'; }
+
+/* ---------- export ---------- */
+function outType(file){
+  let f = S.format;
+  if (f === 'same') { const t = (file.type || '').toLowerCase(); f = t === 'image/png' ? 'png' : t === 'image/webp' ? 'webp' : 'jpeg'; }
+  return f === 'png' ? { type:'image/png', ext:'png' } : f === 'webp' ? { type:'image/webp', ext:'webp' } : { type:'image/jpeg', ext:'jpg' };
+}
+function outName(name, ext){
+  const base = name.replace(/\.[^./\\]+$/, '') || 'file';
+  if (ext === 'jpg' && /\.jpeg$/i.test(name)) ext = 'jpeg';
+  return base + (S.suffix || '') + '.' + ext;
+}
+function uniq(set, n){
+  if (!set.has(n.toLowerCase())) { set.add(n.toLowerCase()); return n; }
+  const m = n.match(/^(.*?)(\.[^.]+)$/); let i = 2, c;
+  do { c = `${m ? m[1] : n} (${i++})${m ? m[2] : ''}`; } while (set.has(c.toLowerCase()));
+  set.add(c.toLowerCase()); return c;
+}
+function stamp(){
+  const d = new Date(), p = v => String(v).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+}
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(u){ let c = 0xFFFFFFFF; for (let i = 0; i < u.length; i++) c = CRC[(c ^ u[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+async function makeZip(files){
+  const enc = new TextEncoder(), parts = [], cen = [];
+  const d = new Date();
+  const time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  const date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  let off = 0;
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    setStatus(`กำลังรวมเป็น ZIP ${i + 1}/${files.length}`);
+    const data = new Uint8Array(await f.blob.arrayBuffer());
+    const crc = crc32(data), nm = enc.encode(f.name), size = data.length;
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+    h.setUint16(10, time, true); h.setUint16(12, date, true); h.setUint32(14, crc, true);
+    h.setUint32(18, size, true); h.setUint32(22, size, true); h.setUint16(26, nm.length, true); h.setUint16(28, 0, true);
+    parts.push(h.buffer, nm, f.blob);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true);
+    c.setUint16(10, 0, true); c.setUint16(12, time, true); c.setUint16(14, date, true); c.setUint32(16, crc, true);
+    c.setUint32(20, size, true); c.setUint32(24, size, true); c.setUint16(28, nm.length, true);
+    c.setUint16(30, 0, true); c.setUint16(32, 0, true); c.setUint16(34, 0, true); c.setUint16(36, 0, true);
+    c.setUint32(38, 0, true); c.setUint32(42, off, true);
+    cen.push(c.buffer, nm);
+    off += 30 + nm.length + size;
+    if (off > 0xFFFFFFFF) throw vErr('zip_too_big');
+    await tick();
+  }
+  const cdSize = cen.reduce((a, p) => a + p.byteLength, 0);
+  const e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(4, 0, true); e.setUint16(6, 0, true);
+  e.setUint16(8, files.length, true); e.setUint16(10, files.length, true);
+  e.setUint32(12, cdSize, true); e.setUint32(16, off, true); e.setUint16(20, 0, true);
+  return new Blob([...parts, ...cen, e.buffer], { type:'application/zip' });
+}
+
+let dlP = null;
+function downloads(){
+  if (!(window.claude && typeof window.claude.use === 'function')) return Promise.resolve(undefined);
+  if (!dlP) dlP = window.claude.use('downloads');
+  return dlP;
+}
+async function anchorSave(name, blob){
+  const u = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 120000);
+  await new Promise(r => setTimeout(r, 400));
+}
+async function doSave(name, blob){
+  const d = await downloads();
+  if (d === undefined) { await anchorSave(name, blob); return 'saved'; }
+  if (d === null) { setStatus('มุมมองนี้บันทึกไฟล์ไม่ได้ ลองเปิดหน้านี้ใน claude.ai'); return 'fail'; }
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try { await d.save({ filename:name, data:blob }); return 'saved'; }
+    catch (err) {
+      const code = err && err.code;
+      if (code === 'rate_limited' && attempt < 3) { setStatus('รอหน้าต่างบันทึกก่อนหน้าปิดก่อน…'); await new Promise(r => setTimeout(r, 1500)); continue; }
+      if (code === 'declined') { setStatus('ยกเลิกการบันทึกแล้ว'); return 'declined'; }
+      if (code === 'too_large') { setStatus('ไฟล์ใหญ่เกินที่แอปนี้บันทึกได้ ลองบันทึกทีละรูป หรือเปิดหน้านี้บนคอม'); return 'fail'; }
+      setStatus('บันทึกไฟล์ไม่สำเร็จในมุมมองนี้ ลองเปิดหน้านี้ใน claude.ai'); return 'fail';
+    }
+  }
+  return 'fail';
+}
+
+async function renderImage(it, cv, ctx){
+  const d = await decodeBlob(it.file);
+  const { type } = outType(it.file); let { ext } = outType(it.file);
+  cv.width = d.w; cv.height = d.h;
+  if (type === 'image/jpeg') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, d.w, d.h); }
+  ctx.drawImage(d.src, 0, 0, d.w, d.h); d.close();
+  drawWM(ctx, d.w, d.h);
+  const blob = await new Promise(r => cv.toBlob(r, type, S.quality / 100));
+  cv.width = cv.height = 1;
+  if (!blob || !blob.size) throw vErr('encode');
+  if (blob.type && blob.type !== type) ext = blob.type === 'image/png' ? 'png' : blob.type === 'image/jpeg' ? 'jpg' : ext;
+  return { blob, ext };
+}
+
+async function exportAll(asZip){
+  if (busy) return;
+  const list = readyItems();
+  if (!list.length) return;
+  await ensureFont();
+  if (!wmBox(1000, 1000)) { setStatus(S.mode === 'logo' ? 'ยังไม่ได้เลือกโลโก้' : 'ยังไม่ได้ใส่ข้อความลายน้ำ'); return; }
+  const zipMode = asZip && list.length > 1 && !shareFiles;
+  clearPending();
+  busy = true; cancelReq = false; $('side').inert = true; refreshCounts(false); syncUI(true);
+  const outs = [], fails = [], names = new Set();
+  let saved = 0, stopped = false;
+  const cv = document.createElement('canvas'), ctx = cv.getContext('2d');
+  try {
+    for (let i = 0; i < list.length; i++) {
+      if (cancelReq) { stopped = true; break; }
+      const it = list[i], base = i / list.length, span = 1 / list.length;
+      setStatus(`กำลังใส่ลายน้ำ ${i + 1}/${list.length}`); setProgress(base);
+      let out;
+      try {
+        const r = await renderImage(it, cv, ctx);
+        out = { name:uniq(names, outName(it.name, r.ext)), blob:r.blob };
+      } catch (e) {
+        if (cancelReq) { stopped = true; break; }
+        console.warn('BatchMark:', it.name, e);
+        fails.push(it.name); continue;
+      }
+      if (zipMode || shareFiles) outs.push(out);
+      else {
+        setStatus(`บันทึก ${out.name}`);
+        const r = await doSave(out.name, out.blob);
+        if (r !== 'saved') { stopped = true; break; }
+        saved++;
+      }
+      await tick();
+    }
+    setProgress(1);
+    const notes = fails.length ? ` ข้าม ${fails.length} รูปที่ทำไม่ได้` : '';
+    if (cancelReq) { setStatus('ยกเลิกแล้ว' + (saved ? ` บันทึกไปแล้ว ${saved} ไฟล์` : '')); return; }
+    if (shareFiles) {
+      if (stopped) return;
+      if (!outs.length) { setStatus('ทำรูปไม่สำเร็จ รูปอาจใหญ่เกินที่เครื่องนี้รองรับ'); return; }
+      pending = outs.splice(0);
+      setStatus(`เสร็จแล้ว ${pending.length} รูป แตะ “บันทึก / แชร์” แล้วเลือกบันทึกลงคลังรูปหรือไฟล์` + notes);
+      return;
+    }
+    if (zipMode) {
+      if (stopped) return;
+      if (!outs.length) { setStatus('ทำรูปไม่สำเร็จ รูปอาจใหญ่เกินที่เบราว์เซอร์นี้รองรับ'); return; }
+      const zip = await makeZip(outs);
+      outs.length = 0;
+      setStatus('พร้อมบันทึก ZIP');
+      const r = await doSave(`batchmark-${stamp()}.zip`, zip);
+      if (r === 'saved') setStatus('บันทึก ZIP แล้ว' + notes);
+    } else if (!stopped) {
+      setStatus(saved ? `บันทึกแล้ว ${saved} รูป` + notes : 'ทำรูปไม่สำเร็จ รูปอาจใหญ่เกินที่เบราว์เซอร์นี้รองรับ');
+    }
+  } catch (e) {
+    setStatus(e && e.code === 'zip_too_big' ? 'ZIP ใหญ่เกิน 4 GB ลองบันทึกทีละรูป' : 'เกิดข้อผิดพลาด ลองลดจำนวนรูปต่อครั้ง หรือบันทึกทีละรูป');
+  } finally {
+    busy = false; cancelReq = false; $('side').inert = false;
+    setTimeout(() => setProgress(0), 600); refreshCounts(false); syncUI(true);
+  }
+}
+
+/* ---------- logo ---------- */
+function blobToDataURL(b){ return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); }); }
+function dataURLToBlob(u){
+  const i = u.indexOf(','), head = u.slice(0, i), bin = atob(u.slice(i + 1));
+  const mime = (head.match(/data:([^;]+)/) || [])[1] || 'image/png';
+  const a = new Uint8Array(bin.length); for (let j = 0; j < bin.length; j++) a[j] = bin.charCodeAt(j);
+  return new Blob([a], { type:mime });
+}
+function drawLogoPrev(){
+  const c = $('logoPrev');
+  if (!logo) { c.hidden = true; $('logoEmpty').hidden = false; $('logoDel').hidden = true; $('logoBtn').textContent = 'เลือกโลโก้'; return; }
+  const k = Math.min(1, 480 / logo.w, 172 / logo.h);
+  c.width = Math.max(1, Math.round(logo.w * k)); c.height = Math.max(1, Math.round(logo.h * k));
+  const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(logo.src, 0, 0, c.width, c.height);
+  c.hidden = false; $('logoEmpty').hidden = true; $('logoDel').hidden = false; $('logoBtn').textContent = 'เปลี่ยนโลโก้';
+}
+async function setLogo(blob, persist){
+  try {
+    const d = await decodeBlob(blob);
+    if (logo) logo.close();
+    logo = d;
+    drawLogoPrev(); changed();
+    if (persist) {
+      try { const u = await blobToDataURL(blob); if (u.length < 4500000) localStorage.setItem(LKEY, u); else localStorage.removeItem(LKEY); } catch (e) {}
+    }
+  } catch (e) { setStatus('เปิดไฟล์โลโก้ไม่ได้ ลองใช้ PNG'); }
+}
+
+/* ---------- UI wiring ---------- */
+const fontSel = $('fontSel');
+for (const f of Object.keys(FONTS)) { const o = document.createElement('option'); o.value = f; o.textContent = f; fontSel.appendChild(o); }
+const pos = $('pos');
+let posBuiltFor = '';
+function buildPos(){
+  if (posBuiltFor === editO) return;
+  posBuiltFor = editO; pos.innerHTML = ''; pos.classList.toggle('port', editO === 'port');
+  const g = GRID[editO];
+  for (const v of g.rows) for (const h of g.cols) {
+    const code = v + '-' + h, label = anchorLabel(code);
+    const b = document.createElement('button'); b.type = 'button'; b.dataset.anchor = code; b.dataset.lk = 'pos';
+    b.setAttribute('aria-label', label); b.title = label;
+    b.addEventListener('click', () => { if (isLocked('pos')) return; E().anchor = code; syncUI(); changed(); });
+    pos.appendChild(b);
+  }
+}
+function syncOrient(){
+  const ok = readyItems();
+  const nP = ok.filter(it => it.port).length, nL = ok.length - nP;
+  document.querySelectorAll('#orientSeg button').forEach(b => {
+    const o = b.dataset.orient, n = o === 'port' ? nP : nL;
+    b.setAttribute('aria-pressed', String(o === editO));
+    b.textContent = (o === 'port' ? 'แนวตั้ง' : 'แนวนอน') + (ok.length ? ` ${n} รูป` : '');
+    b.disabled = ok.length > 0 && n === 0 && o !== editO;
+  });
+}
+document.querySelectorAll('#orientSeg button').forEach(b => b.addEventListener('click', () => {
+  const o = b.dataset.orient; if (o === editO) return;
+  const idx = items.findIndex(it => !it.err && it.thumb && (o === 'port') === !!it.port);
+  editO = o; syncUI();
+  if (idx >= 0) select(idx);
+}));
+$('copyPos').addEventListener('click', () => {
+  if (isLocked('pos')) return;
+  const src = editO === 'port' ? S : S.port, dst = E();
+  let a = src.anchor;
+  if (a !== 'custom') {
+    let [v, h] = a.split('-'); const g = GRID[editO];
+    if (!g.rows.includes(v)) v = v[0];
+    if (!g.cols.includes(h)) h = h[0];
+    a = v + '-' + h;
+  }
+  Object.assign(dst, { anchor:a, px:src.px, py:src.py });
+  if (!isLocked('margin')) dst.margin = src.margin;
+  syncUI(); changed();
+});
+document.querySelectorAll('.seg button[data-mode]').forEach(b => b.addEventListener('click', () => {
+  if (isLocked('mode')) return;
+  S.mode = b.dataset.mode; syncUI(); ensureFont().then(changed); changed();
+}));
+document.querySelectorAll('[data-key],[data-okey]').forEach(el => {
+  const k = el.dataset.key || el.dataset.okey, tgt = () => el.dataset.okey ? E() : S;
+  const ev = (el.type === 'range' || el.type === 'text' || el.type === 'color') ? 'input' : 'change';
+  el.addEventListener(ev, () => {
+    if (isLocked(k)) { applyInputs(); return; }
+    const T = tgt();
+    if (el.type === 'checkbox') T[k] = el.checked;
+    else if (el.type === 'range') T[k] = +el.value;
+    else T[k] = el.value;
+    if (k === 'suffix') S[k] = S[k].replace(/[\\/:*?"<>|]/g, '');
+    syncUI(true);
+    if (k === 'font' || k === 'bold' || k === 'text') ensureFont().then(changed);
+    changed();
+  });
+});
+document.querySelectorAll('.lock').forEach(b => b.addEventListener('click', () => {
+  const key = lockKey(b.dataset.lock);
+  if (L[key]) delete L[key]; else L[key] = true;
+  saveLocks(); syncUI(true);
+}));
+function applyInputs(){
+  document.querySelectorAll('[data-key],[data-okey]').forEach(el => {
+    const v = el.dataset.okey ? E()[el.dataset.okey] : S[el.dataset.key];
+    if (el.type === 'checkbox') el.checked = !!v; else el.value = v;
+  });
+}
+function syncLocks(){
+  document.querySelectorAll('.lock').forEach(b => {
+    const k = b.dataset.lock, on = isLocked(k);
+    const nm = (LOCK_NAMES[k] || k) + (OKEYS.has(k) ? (editO === 'port' ? ' ของแนวตั้ง' : ' ของแนวนอน') : '');
+    b.setAttribute('aria-pressed', String(on));
+    b.setAttribute('aria-label', (on ? 'ปลดล็อก' : 'ล็อก') + nm);
+    b.title = on ? `${nm} ล็อกอยู่ แตะเพื่อปลดล็อก` : `ล็อก${nm}`;
+    const icon = on ? ICON_LOCK : ICON_OPEN;
+    if (b.dataset.icon !== String(on)) { b.innerHTML = icon; b.dataset.icon = String(on); }
+  });
+  document.querySelectorAll('[data-key],[data-okey],[data-lk]').forEach(el => {
+    const k = el.dataset.lk || el.dataset.key || el.dataset.okey;
+    el.disabled = isLocked(k);
+  });
+}
+function syncUI(skipInputs){
+  buildPos();
+  if (!skipInputs) applyInputs();
+  const P = E();
+  $('sizeOut').textContent = `${P.size}% ของความกว้าง`;
+  $('opacityOut').textContent = `${S.opacity}%`;
+  $('rotateOut').textContent = `${S.rotate}°`;
+  $('marginOut').textContent = `${P.margin}%`;
+  $('gapOut').textContent = `${S.gap}%`;
+  $('qOut').textContent = `${S.quality}`;
+  document.querySelectorAll('.seg button[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === S.mode)));
+  $('textPanel').hidden = S.mode !== 'text';
+  $('logoPanel').hidden = S.mode !== 'logo';
+  $('qField').hidden = S.format === 'png';
+  $('gapField').hidden = !S.tile;
+  $('posWrap').classList.toggle('is-off', S.tile);
+  $('xyWrap').classList.toggle('is-off', S.tile);
+  $('marginField').classList.toggle('is-off', S.tile || P.anchor === 'custom');
+  pos.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(!S.tile && b.dataset.anchor === P.anchor)));
+  const A = P.anchor, lab = A === 'custom' ? '' : anchorLabel(A), posLocked = isLocked('pos');
+  $('posNote').textContent = S.tile ? 'ปิดอยู่ระหว่างปูลายน้ำทั้งรูป'
+    : (A === 'custom' ? `วางเอง ทุกรูป${editO === 'port' ? 'แนวตั้ง' : 'แนวนอน'}ใช้สัดส่วนเดียวกัน` : lab)
+      + (posLocked ? ' (ล็อกอยู่)' : '');
+  $('copyPos').textContent = editO === 'port' ? 'ใช้ตำแหน่งเดียวกับแนวนอน' : 'ใช้ตำแหน่งเดียวกับแนวตั้ง';
+  const pvLocked = pvSrc ? isLocked('pos', orientOf(pv.width, pv.height)) : false;
+  $('stageHint').textContent = S.tile ? 'ปูลายน้ำทั้งรูปอยู่ ปรับขนาด ความเข้ม และระยะห่างได้ที่แผงตั้งค่า'
+    : pvLocked ? 'ตำแหน่งถูกล็อกอยู่ ปลดล็อกได้ที่หมวดขนาดและตำแหน่ง'
+    : 'แตะหรือลากบนรูปเพื่อย้ายลายน้ำ';
+  pv.classList.toggle('nodrag', S.tile || pvLocked);
+  syncOrient();
+  syncLocks();
+  syncXY();
+}
+function curCenter(){
+  const P = E();
+  if (P.anchor === 'custom') return { x:P.px, y:P.py };
+  if (lastRes && pvSrc && pv.width && orientOf(pv.width, pv.height) === editO) { const p = lastRes.L.pts[0]; return { x:p.x / pv.width, y:p.y / pv.height }; }
+  return null;
+}
+function syncXY(){
+  const c = curCenter(), fx = $('posX'), fy = $('posY');
+  fx.disabled = fy.disabled = !c || isLocked('pos');
+  if (!c) { $('posXOut').textContent = $('posYOut').textContent = '–'; return; }
+  fx.value = (c.x * 100).toFixed(1); fy.value = (c.y * 100).toFixed(1);
+  $('posXOut').textContent = Math.round(c.x * 100) + '%';
+  $('posYOut').textContent = Math.round(c.y * 100) + '%';
+}
+['posX', 'posY'].forEach(id => $(id).addEventListener('input', e => {
+  const c = curCenter(); if (!c || isLocked('pos')) return;
+  const P = E(); P.anchor = 'custom'; P.px = c.x; P.py = c.y;
+  if (id === 'posX') P.px = +e.target.value / 100; else P.py = +e.target.value / 100;
+  syncUI(true); changed();
+}));
+
+function toCanvas(e){
+  const r = pv.getBoundingClientRect();
+  return { x:(e.clientX - r.left) / r.width * pv.width, y:(e.clientY - r.top) / r.height * pv.height };
+}
+function moveTo(p){
+  const P = PO(pv.width, pv.height);
+  P.anchor = 'custom';
+  P.px = clamp((p.x + dragOff.x) / pv.width, 0, 1);
+  P.py = clamp((p.y + dragOff.y) / pv.height, 0, 1);
+  syncUI(true); renderPreview();
+}
+pv.addEventListener('pointerdown', e => {
+  if (!pvSrc || S.tile || !lastRes || busy) return;
+  if (isLocked('pos', orientOf(pv.width, pv.height))) return;
+  e.preventDefault();
+  const p = toCanvas(e), c = lastRes.L.pts[0], { bw, bh } = lastRes.L;
+  dragOff = (Math.abs(p.x - c.x) <= bw / 2 && Math.abs(p.y - c.y) <= bh / 2) ? { x:c.x - p.x, y:c.y - p.y } : { x:0, y:0 };
+  dragging = true; pv.classList.add('dragging');
+  try { pv.setPointerCapture(e.pointerId); } catch (_) {}
+  moveTo(p);
+});
+pv.addEventListener('pointermove', e => { if (dragging) moveTo(toCanvas(e)); });
+const endDrag = () => { if (!dragging) return; dragging = false; pv.classList.remove('dragging'); changed(); };
+pv.addEventListener('pointerup', endDrag);
+pv.addEventListener('pointercancel', endDrag);
+pv.addEventListener('keydown', e => {
+  const map = { ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1] }, m = map[e.key];
+  if (!m || S.tile || !lastRes || busy) return;
+  if (isLocked('pos', orientOf(pv.width, pv.height))) return;
+  e.preventDefault();
+  const P = PO(pv.width, pv.height);
+  if (P.anchor !== 'custom') { const p = lastRes.L.pts[0]; P.px = p.x / pv.width; P.py = p.y / pv.height; P.anchor = 'custom'; }
+  const st = e.shiftKey ? 0.02 : 0.004;
+  P.px = clamp(P.px + m[0] * st, 0, 1); P.py = clamp(P.py + m[1] * st, 0, 1);
+  syncUI(true); changed();
+});
+
+function resetSettings(){
+  const D = JSON.parse(JSON.stringify(DEF));
+  const lkOf = k => ['anchor', 'px', 'py'].includes(k) ? 'pos' : k;
+  for (const k in D) {
+    if (k === 'port') continue;
+    if (!L[lockKey(lkOf(k), 'land')]) S[k] = D[k];
+  }
+  for (const k in D.port) if (!L[lockKey(lkOf(k), 'port')]) S.port[k] = D.port[k];
+}
+
+$('pickBtn').addEventListener('click', () => $('fileIn').click());
+$('addBtn').addEventListener('click', () => $('fileIn').click());
+$('fileIn').addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
+$('clearBtn').addEventListener('click', clearAll);
+$('logoBtn').addEventListener('click', () => { if (!isLocked('logo')) $('logoIn').click(); });
+$('logoIn').addEventListener('change', e => { const f = e.target.files[0]; if (f && !isLocked('logo')) setLogo(f, true); e.target.value = ''; });
+$('logoDel').addEventListener('click', () => { if (isLocked('logo')) return; if (logo) logo.close(); logo = null; try { localStorage.removeItem(LKEY); } catch (e) {} drawLogoPrev(); changed(); });
+$('resetBtn').addEventListener('click', () => { resetSettings(); syncUI(); ensureFont().then(changed); changed(); });
+$('unlockAll').addEventListener('click', () => { L = {}; saveLocks(); syncUI(true); });
+$('saveAll').addEventListener('click', () => exportAll(true));
+$('saveEach').addEventListener('click', () => exportAll(false));
+$('cancelBtn').addEventListener('click', () => {
+  if (!busy) return;
+  cancelReq = true; setStatus('กำลังยกเลิก…');
+});
+
+$('shareBtn').addEventListener('click', async () => {
+  if (!pending || busy) return;
+  const files = pending.map(o => new File([o.blob], o.name, { type:o.blob.type || 'application/octet-stream' }));
+  try {
+    if (navigator.canShare({ files })) { await navigator.share({ files }); setStatus(`ส่งออก ${files.length} ไฟล์แล้ว แตะอีกครั้งเพื่อส่งไปที่อื่นได้`); }
+    else { setStatus('ไฟล์เยอะหรือใหญ่เกินจะแชร์ทีเดียว กำลังดาวน์โหลดแทน'); for (const o of pending) await anchorSave(o.name, o.blob); setStatus('ดาวน์โหลดแล้ว'); }
+  } catch (e) {
+    if (e && e.name === 'AbortError') setStatus('ยกเลิกแล้ว แตะ “บันทึก / แชร์” ใหม่ได้');
+    else { setStatus('แชร์ไม่สำเร็จ กำลังดาวน์โหลดแทน'); for (const o of pending) await anchorSave(o.name, o.blob); setStatus('ดาวน์โหลดแล้ว'); }
+  }
+});
+$('zipBtn').addEventListener('click', async () => {
+  if (!pending || busy) return;
+  try { const z = await makeZip(pending); await anchorSave(`batchmark-${stamp()}.zip`, z); setStatus('ดาวน์โหลด ZIP แล้ว'); }
+  catch (e) { setStatus('ทำ ZIP ไม่สำเร็จ ลองใช้ปุ่มบันทึก / แชร์'); }
+});
+
+const stage = $('stage');
+let dragDepth = 0;
+document.addEventListener('dragenter', e => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { dragDepth++; stage.classList.add('over'); } });
+document.addEventListener('dragleave', () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) stage.classList.remove('over'); });
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+  e.preventDefault(); dragDepth = 0; stage.classList.remove('over');
+  if (busy) return;
+  if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+});
+if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => { renderPreview(); scheduleThumbs(); });
+
+/* ---------- start ---------- */
+syncUI();
+drawLogoPrev();
+try { const u = localStorage.getItem(LKEY); if (u) setLogo(dataURLToBlob(u), false); } catch (e) {}
+ensureFont().then(() => { renderPreview(); scheduleThumbs(); });
+if ('serviceWorker' in navigator && window.isSecureContext && location.protocol !== 'file:') {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+downloads().then(d => { if (d === null) { noSave = true; refreshCounts(false); setStatus('บันทึกไฟล์ได้เมื่อเปิดหน้านี้ใน claude.ai'); } });
+})();
+</script>
+</body>
+</html>
