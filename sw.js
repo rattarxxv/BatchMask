@@ -1,10 +1,11 @@
 // BatchMark service worker: makes the app installable and usable offline.
 // Bump VERSION whenever you change any file so phones pick up the update.
-const VERSION = 'batchmark-v5';
+const VERSION = 'batchmark-v6';
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './mediabunny.min.js',
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon.png'
@@ -40,7 +41,8 @@ self.addEventListener('fetch', event => {
   // App files and fonts: serve from cache, refresh in the background.
   const cacheable = url.origin === self.location.origin
     || url.hostname === 'fonts.googleapis.com'
-    || url.hostname === 'fonts.gstatic.com';
+    || url.hostname === 'fonts.gstatic.com'
+    || url.hostname === 'cdn.jsdelivr.net';
   if (!cacheable) return;
   event.respondWith(
     caches.match(req).then(hit => {

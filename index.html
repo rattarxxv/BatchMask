@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BatchMark</title>
-<meta name="description" content="แปะลายน้ำรูปทั้งชุดในตำแหน่งเดียวกัน ขนาดเท่าต้นฉบับ ทำงานในเครื่อง">
+<meta name="description" content="แปะลายน้ำรูปและวิดีโอทั้งชุดในตำแหน่งเดียวกัน ขนาดเท่าต้นฉบับ ทำงานในเครื่อง">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -90,6 +90,7 @@ button{font:inherit}
 .thumb.active .thumb-btn{outline:2.5px solid var(--accent);outline-offset:2px}
 .thumb-x{position:absolute;top:-7px;right:-7px;width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:16px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0}
 .thumb-msg{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;line-height:1.35;color:var(--stage-text);text-align:center;padding:6px;pointer-events:none}
+.thumb-dur{position:absolute;left:4px;bottom:4px;font-size:11px;line-height:1;padding:3px 5px;border-radius:4px;background:rgba(0,0,0,.65);color:#fff;font-variant-numeric:tabular-nums;pointer-events:none}
 
 /* Controls */
 .side{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:2px 18px}
@@ -155,16 +156,16 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:30px}
 <div class="app">
   <header class="top">
     <h1 class="brand">Batch<b>Mark</b></h1>
-    <p class="lede">แปะลายน้ำรูปทั้งชุดในตำแหน่งเดียวกัน ขนาดเท่าต้นฉบับ ประมวลผลในเครื่องคุณ ไม่มีการอัปโหลดรูปไปที่ไหน</p>
+    <p class="lede">แปะลายน้ำรูปและวิดีโอทั้งชุดในตำแหน่งเดียวกัน ขนาดเท่าต้นฉบับ ประมวลผลในเครื่องคุณ ไม่มีการอัปโหลดไปที่ไหน</p>
   </header>
 
   <main class="main">
     <section class="stage" id="stage" aria-label="ตัวอย่าง">
       <div class="marks" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
       <div class="drop" id="drop">
-        <p class="drop-title">ลากรูปมาวางตรงนี้</p>
-        <p class="drop-sub">เลือกได้ทีละหลายรูป (JPG, PNG, WebP)</p>
-        <button class="btn primary" type="button" id="pickBtn">เลือกรูป</button>
+        <p class="drop-title">ลากรูปหรือวิดีโอมาวางตรงนี้</p>
+        <p class="drop-sub">เลือกได้ทีละหลายไฟล์ รูป JPG, PNG, WebP และวิดีโอ MP4, MOV, WebM</p>
+        <button class="btn primary" type="button" id="pickBtn">เลือกไฟล์</button>
       </div>
       <canvas id="pv" hidden tabindex="0" aria-label="ตัวอย่างพร้อมลายน้ำ แตะหรือลากเพื่อย้าย ใช้ปุ่มลูกศรขยับทีละนิด"></canvas>
       <p class="stage-hint" id="stageHint" hidden></p>
@@ -173,11 +174,11 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:30px}
     <div class="strip-head" id="stripHead" hidden>
       <span id="countLabel"></span>
       <span class="strip-actions">
-        <button class="link" type="button" id="addBtn">เพิ่มรูป</button>
+        <button class="link" type="button" id="addBtn">เพิ่มไฟล์</button>
         <button class="link danger" type="button" id="clearBtn">ล้างทั้งหมด</button>
       </span>
     </div>
-    <div class="strip" id="strip" role="list" aria-label="รูปทั้งหมด"></div>
+    <div class="strip" id="strip" role="list" aria-label="ไฟล์ทั้งหมด"></div>
   </main>
 
   <aside class="side" id="side" aria-label="ตั้งค่าลายน้ำ">
@@ -232,11 +233,11 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:30px}
 
     <section class="group">
       <h2>ขนาดและตำแหน่ง</h2>
-      <div class="seg" id="orientSeg" role="group" aria-label="ตั้งค่าให้รูปแนวไหน">
+      <div class="seg" id="orientSeg" role="group" aria-label="ตั้งค่าให้ไฟล์แนวไหน">
         <button type="button" data-orient="land">แนวนอน</button>
         <button type="button" data-orient="port">แนวตั้ง</button>
       </div>
-      <p class="hint">รูปแนวนอนกับแนวตั้งตั้งขนาดและตำแหน่งแยกกัน แตะรูปย่อหรือแท็บนี้เพื่อสลับ (รูปจัตุรัสนับเป็นแนวนอน)</p>
+      <p class="hint">แนวนอนกับแนวตั้งตั้งขนาดและตำแหน่งแยกกัน แตะรูปย่อหรือแท็บนี้เพื่อสลับ (จัตุรัสนับเป็นแนวนอน)</p>
       <div class="field">
         <div class="lab-row"><label for="size">ขนาด</label><span class="lab-end"><output id="sizeOut" for="size"></output><button class="lock" type="button" data-lock="size"></button></span></div>
         <input type="range" id="size" data-okey="size" min="2" max="100" step="1">
@@ -261,7 +262,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:30px}
         <div class="lab-row"><label for="margin">ระยะห่างจากขอบ</label><span class="lab-end"><output id="marginOut" for="margin"></output><button class="lock" type="button" data-lock="margin"></button></span></div>
         <input type="range" id="margin" data-okey="margin" min="0" max="25" step="0.5">
       </div>
-      <div class="check-row"><label class="check"><input type="checkbox" data-key="tile"> ปูลายน้ำซ้ำทั้งรูป (ครอปออกยาก)</label><button class="lock" type="button" data-lock="tile"></button></div>
+      <div class="check-row"><label class="check"><input type="checkbox" data-key="tile"> ปูลายน้ำซ้ำทั้งไฟล์ (ครอปออกยาก)</label><button class="lock" type="button" data-lock="tile"></button></div>
       <div class="field" id="gapField" hidden>
         <div class="lab-row"><label for="gap">ระยะห่างระหว่างลายน้ำ</label><span class="lab-end"><output id="gapOut" for="gap"></output><button class="lock" type="button" data-lock="gap"></button></span></div>
         <input type="range" id="gap" data-key="gap" min="0" max="300" step="5">
@@ -271,7 +272,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:30px}
     <section class="group">
       <h2>ไฟล์ที่บันทึก</h2>
       <div class="field">
-        <div class="lab-row"><label for="format">รูปแบบไฟล์</label><span class="lab-end"><button class="lock" type="button" data-lock="format"></button></span></div>
+        <div class="lab-row"><label for="format">รูปแบบไฟล์รูป</label><span class="lab-end"><button class="lock" type="button" data-lock="format"></button></span></div>
         <select id="format" data-key="format">
           <option value="same">ตามไฟล์ต้นฉบับ</option>
           <option value="jpeg">JPG</option>
@@ -280,14 +281,30 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:30px}
         </select>
       </div>
       <div class="field" id="qField">
-        <div class="lab-row"><label for="quality">คุณภาพ JPG / WebP</label><span class="lab-end"><output id="qOut" for="quality"></output><button class="lock" type="button" data-lock="quality"></button></span></div>
+        <div class="lab-row"><label for="quality">คุณภาพรูป JPG / WebP</label><span class="lab-end"><output id="qOut" for="quality"></output><button class="lock" type="button" data-lock="quality"></button></span></div>
         <input type="range" id="quality" data-key="quality" min="80" max="100" step="1">
+      </div>
+      <div class="field">
+        <div class="lab-row"><label for="vquality">คุณภาพวิดีโอ (บันทึกเป็น MP4)</label><span class="lab-end"><button class="lock" type="button" data-lock="vquality"></button></span></div>
+        <select id="vquality" data-key="vquality">
+          <option value="very_high">สูงมาก (ใกล้ต้นฉบับ)</option>
+          <option value="high">สูง (ไฟล์เล็กลง)</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="lab-row"><label for="vcodec">Codec วิดีโอ</label><span class="lab-end"><button class="lock" type="button" data-lock="vcodec"></button></span></div>
+        <select id="vcodec" data-key="vcodec">
+          <option value="same">ตามต้นฉบับ</option>
+          <option value="avc">AVC / H.264 (เปิดได้ทุกที่)</option>
+          <option value="hevc">HEVC / H.265 (ไฟล์เล็กกว่า)</option>
+        </select>
+        <p class="hint" style="margin:4px 0 0">ถ้าเครื่องนี้เข้ารหัส codec ที่เลือกไม่ได้ จะใช้ตัวที่ทำได้แทน (ปกติคือ AVC) และแจ้งให้รู้หลังบันทึก</p>
       </div>
       <div class="field">
         <div class="lab-row"><label for="suffix">ต่อท้ายชื่อไฟล์</label><span class="lab-end"><button class="lock" type="button" data-lock="suffix"></button></span></div>
         <input type="text" id="suffix" data-key="suffix" maxlength="30" placeholder="เว้นว่างได้" autocomplete="off">
       </div>
-      <p class="hint">ขนาดพิกเซลเท่าต้นฉบับทุกรูป คุณภาพ 95 ขึ้นไปแทบแยกจากต้นฉบับไม่ออก</p>
+      <p class="hint">ขนาดพิกเซลเท่าต้นฉบับทุกไฟล์ รูปคุณภาพ 95 ขึ้นไปแทบแยกจากต้นฉบับไม่ออก วิดีโอต้องเข้ารหัสใหม่ทั้งคลิป ส่วนเสียงคัดลอกไปตรง ๆ เมื่อทำได้</p>
       <p class="hint">กดไอคอนแม่กุญแจเพื่อล็อกค่านั้น ค่าที่ล็อกจะแก้ไม่ได้และไม่ถูกคืนค่าเริ่มต้น</p>
       <div class="row-btns">
         <button class="link" type="button" id="resetBtn">คืนค่าเริ่มต้น</button>
@@ -300,10 +317,10 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:30px}
 <div class="savebar">
   <div class="prog" id="prog"></div>
   <div class="savebar-in">
-    <p class="status" id="status" role="status" aria-live="polite">ยังไม่มีรูป</p>
+    <p class="status" id="status" role="status" aria-live="polite">ยังไม่มีไฟล์</p>
     <div class="save-btns">
       <button class="btn" type="button" id="cancelBtn" hidden>ยกเลิก</button>
-      <button class="btn" type="button" id="saveEach" hidden>บันทึกทีละรูป</button>
+      <button class="btn" type="button" id="saveEach" hidden>บันทึกทีละไฟล์</button>
       <button class="btn primary" type="button" id="saveAll" disabled>บันทึกทั้งหมด</button>
       <button class="btn" type="button" id="zipBtn" hidden>ZIP</button>
       <button class="btn primary" type="button" id="shareBtn" hidden>บันทึก / แชร์</button>
@@ -311,7 +328,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:30px}
   </div>
 </div>
 
-<input type="file" id="fileIn" class="vh" accept="image/*" multiple tabindex="-1" aria-hidden="true">
+<input type="file" id="fileIn" class="vh" accept="image/*,video/*,.mov,.mkv" multiple tabindex="-1" aria-hidden="true">
 <input type="file" id="logoIn" class="vh" accept="image/png,image/webp,image/jpeg,image/svg+xml" tabindex="-1" aria-hidden="true">
 
 <script>
@@ -321,19 +338,22 @@ const $ = id => document.getElementById(id);
 const FONTS = { 'Kanit':[400,700], 'Sarabun':[400,700], 'Chakra Petch':[500,700], 'Pridi':[400,600], 'Anuphan':[400,700] };
 const DEF = { mode:'text', text:'© ร้านของฉัน', font:'Kanit', bold:true, color:'#ffffff', shadow:true,
   size:30, opacity:60, rotate:0, anchor:'b-r', px:0.85, py:0.9, margin:3, tile:false, gap:80,
-  format:'same', quality:95, suffix:'_wm',
+  format:'same', quality:95, vquality:'very_high', vcodec:'same', suffix:'_wm',
   port:{ size:45, anchor:'b-r', px:0.8, py:0.92, margin:3 } };
 const SKEY = 'wm.settings.v1', LKEY = 'wm.logo.v1', KKEY = 'wm.locks.v1';
 const THUMB = 360, PV = 1800;
+const MB_BASE = 'https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/dist/bundles/';
 const VL = { t:'บน', t2:'ค่อนบน', m:'กลาง', b2:'ค่อนล่าง', b:'ล่าง' };
 const HL = { l:'ซ้าย', l2:'ค่อนซ้าย', c:'กลาง', r2:'ค่อนขวา', r:'ขวา' };
 const GRID = { land:{ rows:['t','m','b'], cols:['l','l2','c','r2','r'] }, port:{ rows:['t','t2','m','b2','b'], cols:['l','c','r'] } };
 const anchorLabel = a => { const [v, h] = a.split('-'); return (v === 'm' && h === 'c') ? 'กึ่งกลาง' : (VL[v] || '') + (HL[h] || ''); };
 const ANCHOR_RE = /^(t|t2|m|b2|b)-(l|l2|c|r2|r)$/;
 const OKEYS = new Set(['size', 'pos', 'margin']);
+const CODEC_LABEL = { avc:'AVC', hevc:'HEVC', vp9:'VP9', av1:'AV1', vp8:'VP8', prores:'ProRes' };
+const codecName = c => c ? (CODEC_LABEL[c] || String(c).toUpperCase()) : '';
 const LOCK_NAMES = { mode:'ชนิดลายน้ำ', text:'ข้อความ', font:'ฟอนต์', color:'สี', bold:'ตัวหนา', logo:'โลโก้', shadow:'เงา',
-  opacity:'ความเข้ม', rotate:'การหมุน', size:'ขนาด', pos:'ตำแหน่ง', margin:'ระยะห่างจากขอบ', tile:'ปูลายน้ำทั้งรูป',
-  gap:'ระยะห่างระหว่างลายน้ำ', format:'รูปแบบไฟล์', quality:'คุณภาพ JPG / WebP', suffix:'ต่อท้ายชื่อไฟล์' };
+  opacity:'ความเข้ม', rotate:'การหมุน', size:'ขนาด', pos:'ตำแหน่ง', margin:'ระยะห่างจากขอบ', tile:'ปูลายน้ำทั้งไฟล์',
+  gap:'ระยะห่างระหว่างลายน้ำ', format:'รูปแบบไฟล์รูป', quality:'คุณภาพรูป', vquality:'คุณภาพวิดีโอ', vcodec:'codec วิดีโอ', suffix:'ต่อท้ายชื่อไฟล์' };
 const SVG_A = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/>';
 const ICON_LOCK = SVG_A + '<path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
 const ICON_OPEN = SVG_A + '<path d="M8 11V7a4 4 0 0 1 7.7-1.5"/></svg>';
@@ -349,6 +369,8 @@ try {
   }
 } catch (e) {}
 if (!FONTS[S.font]) S.font = DEF.font;
+if (S.vquality !== 'high') S.vquality = 'very_high';
+if (!['same', 'avc', 'hevc'].includes(S.vcodec)) S.vcodec = 'same';
 if (/^[tmb][lcr]$/.test(S.anchor)) S.anchor = S.anchor[0] + '-' + S.anchor[1];
 for (const o of [S, S.port]) if (o.anchor !== 'custom' && !ANCHOR_RE.test(o.anchor)) o.anchor = 'b-r';
 let L = {};
@@ -357,7 +379,7 @@ try { const r = JSON.parse(localStorage.getItem(KKEY) || '{}'); if (r && typeof 
 let logo = null;
 const items = [];
 let current = -1, pvSrc = null, lastRes = null, busy = false, blobBlocked = false, uid = 0, noSave = false;
-let cancelReq = false;
+let cancelReq = false, currentConv = null;
 const inClaude = !!(window.claude && typeof window.claude.use === 'function');
 const shareFiles = !inClaude && typeof navigator.share === 'function' && typeof navigator.canShare === 'function'
   && window.matchMedia && matchMedia('(pointer: coarse)').matches;
@@ -373,6 +395,7 @@ const pv = $('pv'), pctx = pv.getContext('2d');
 const mctx = document.createElement('canvas').getContext('2d');
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const tick = () => new Promise(r => setTimeout(r, 0));
+const fmtDur = s => { s = Math.max(0, Math.round(s || 0)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = String(s % 60).padStart(2, '0'); return h ? `${h}:${String(m).padStart(2, '0')}:${x}` : `${m}:${x}`; };
 
 /* ---------- watermark geometry (relative, so every file matches) ---------- */
 function fontStr(px){ return `${FONTS[S.font][S.bold ? 1 : 0]} ${px}px "${S.font}", "Anuphan", sans-serif`; }
@@ -476,7 +499,100 @@ function scaled(src, w, h, max){
   return c;
 }
 
+/* ---------- video (Mediabunny + WebCodecs) ---------- */
+const hasWebCodecs = () => typeof VideoDecoder !== 'undefined' && typeof VideoEncoder !== 'undefined' && typeof VideoFrame !== 'undefined';
+let mbP = null;
+function loadScript(src){
+  return new Promise(res => {
+    const el = document.createElement('script');
+    el.src = src; el.async = true;
+    el.onload = () => res(true);
+    el.onerror = () => { el.remove(); res(false); };
+    document.head.appendChild(el);
+  });
+}
+function loadMB(){
+  if (window.Mediabunny && window.Mediabunny.Input) return Promise.resolve(window.Mediabunny);
+  if (mbP) return mbP;
+  mbP = (async () => {
+    for (const src of ['mediabunny.min.js', MB_BASE + 'mediabunny.min.cjs']) {
+      if (await loadScript(src) && window.Mediabunny && window.Mediabunny.Input) return window.Mediabunny;
+    }
+    try { const m = await import(MB_BASE + 'mediabunny.min.mjs'); if (m && m.Input) return m; } catch (e) {}
+    return null;
+  })();
+  return mbP;
+}
 const vErr = code => Object.assign(new Error(code), { code });
+async function videoFrame(file, max){
+  const MB = await loadMB();
+  if (!MB || !hasWebCodecs()) throw vErr('novideo');
+  const input = new MB.Input({ formats:MB.ALL_FORMATS, source:new MB.BlobSource(file) });
+  try {
+    const vt = await input.getPrimaryVideoTrack();
+    if (!vt) throw vErr('notrack');
+    if (!(await vt.canDecode())) throw vErr('nodecode');
+    const W = vt.displayWidth, H = vt.displayHeight, codec = vt.codec || '';
+    let dur = 0, t0 = 0;
+    try { dur = await input.computeDuration(); } catch (e) {}
+    try { t0 = await vt.getFirstTimestamp(); } catch (e) {}
+    const k = Math.min(1, max / Math.max(W, H));
+    const sink = new MB.CanvasSink(vt, { width:Math.max(2, Math.round(W * k)), height:Math.max(2, Math.round(H * k)), fit:'fill' });
+    let wc = await sink.getCanvas(t0 + Math.min(1, dur * 0.1));
+    if (!wc) wc = await sink.getCanvas(t0);
+    if (!wc) throw vErr('noframe');
+    const c = document.createElement('canvas');
+    c.width = wc.canvas.width; c.height = wc.canvas.height;
+    c.getContext('2d').drawImage(wc.canvas, 0, 0);
+    return { W, H, dur, frame:c, codec };
+  } finally { try { input.dispose(); } catch (e) {} }
+}
+async function convertVideo(file, onP){
+  const MB = await loadMB();
+  if (!MB || !hasWebCodecs()) throw vErr('novideo');
+  const input = new MB.Input({ formats:MB.ALL_FORMATS, source:new MB.BlobSource(file) });
+  const target = new MB.BufferTarget();
+  const output = new MB.Output({ format:new MB.Mp4OutputFormat({ fastStart:'in-memory' }), target });
+  const cv = document.createElement('canvas'), ctx = cv.getContext('2d');
+  try {
+    const vt = await input.getPrimaryVideoTrack();
+    if (!vt) throw vErr('notrack');
+    const W = vt.displayWidth, H = vt.displayHeight;
+    const quality = S.vquality === 'high' ? MB.QUALITY_HIGH : MB.QUALITY_VERY_HIGH;
+    const src = vt.codec || '';
+    const want = S.vcodec === 'same' ? (['avc', 'hevc', 'vp9', 'av1'].includes(src) ? src : 'avc') : S.vcodec;
+    const canEnc = async c => { try { return await MB.canEncodeVideo(c, { width:W, height:H, quality }); } catch (e) { return false; } };
+    let codec;
+    for (const c of [...new Set([want, 'avc', 'hevc', 'vp9', 'av1'])]) if (await canEnc(c)) { codec = c; break; }
+    const conv = await MB.Conversion.init({
+      input, output, tracks:'primary', showWarnings:false,
+      video:{
+        codec, quality, forceTranscode:true, allowTransformationMetadata:false,
+        processedWidth:W, processedHeight:H,
+        process:(sample) => {
+          const w = sample.displayWidth, h = sample.displayHeight;
+          if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+          ctx.clearRect(0, 0, w, h);
+          sample.draw(ctx, 0, 0, w, h);
+          drawWM(ctx, w, h);
+          return cv;
+        }
+      },
+      audio:{}
+    });
+    if (!conv.isValid) throw vErr('invalid');
+    const noAudio = conv.discardedTracks.some(d => d.track && d.track.type === 'audio' && d.reason !== 'discarded_by_user');
+    currentConv = conv;
+    conv.onProgress = p => onP(p);
+    if (cancelReq) await conv.cancel();
+    await conv.execute();
+    if (!target.buffer) throw vErr('empty');
+    return { blob:new Blob([target.buffer], { type:'video/mp4' }), noAudio, want, codec, fellBack:codec !== want };
+  } finally {
+    currentConv = null; cv.width = cv.height = 1;
+    try { input.dispose(); } catch (e) {}
+  }
+}
 
 /* ---------- preview ---------- */
 let raf = 0;
@@ -524,9 +640,16 @@ function resetStage(){
 }
 
 /* ---------- items ---------- */
-const IMAGE_EXT = /\.(jpe?g|png|webp|gif|bmp|avif|heic|heif)$/i;
+const VIDEO_EXT = /\.(mp4|m4v|mov|webm|mkv)$/i, IMAGE_EXT = /\.(jpe?g|png|webp|gif|bmp|avif|heic|heif)$/i;
+const isVideoFile = f => (f.type && f.type.startsWith('video/')) || VIDEO_EXT.test(f.name || '');
 const isImageFile = f => (f.type && f.type.startsWith('image/')) || IMAGE_EXT.test(f.name || '');
-function errText(){ return 'เปิดไฟล์นี้ไม่ได้'; }
+function errText(e){
+  const c = e && e.code;
+  if (c === 'novideo') return 'เบราว์เซอร์นี้ทำวิดีโอไม่ได้';
+  if (c === 'nodecode') return 'ไม่รองรับ codec ของวิดีโอนี้';
+  if (c === 'notrack') return 'ไม่พบภาพในไฟล์นี้';
+  return 'เปิดไฟล์นี้ไม่ได้';
+}
 function makeThumbEl(it){
   const wrap = document.createElement('div'); wrap.className = 'thumb'; wrap.setAttribute('role', 'listitem');
   const b = document.createElement('button'); b.type = 'button'; b.className = 'thumb-btn'; b.setAttribute('aria-label', 'ดูตัวอย่าง ' + it.name);
@@ -541,11 +664,12 @@ function makeThumbEl(it){
 }
 let loadQ = Promise.resolve();
 function addFiles(list){
-  const files = [...list].filter(isImageFile);
-  if (!files.length) { setStatus('ไฟล์ที่เลือกไม่ใช่รูปภาพ'); return; }
+  const files = [...list].filter(f => isVideoFile(f) || isImageFile(f));
+  if (!files.length) { setStatus('ไฟล์ที่เลือกไม่ใช่รูปหรือวิดีโอ'); return; }
   clearPending();
-  const added = files.map(f => ({ id:++uid, file:f, name:f.name || ('file-' + uid), kind:'image', thumb:null, err:false, port:false }));
+  const added = files.map(f => ({ id:++uid, file:f, name:f.name || ('file-' + uid), kind:isVideoFile(f) ? 'video' : 'image', thumb:null, err:false, port:false }));
   for (const it of added) { items.push(it); $('strip').appendChild(makeThumbEl(it)); }
+  if (added.some(it => it.kind === 'video')) loadMB();
   refreshCounts(false);
   loadQ = loadQ.then(() => loadThumbs(added));
 }
@@ -553,13 +677,24 @@ async function loadThumbs(list){
   for (let i = 0; i < list.length; i++) {
     const it = list[i];
     if (!items.includes(it)) continue;
-    if (!busy) setStatus(`กำลังเปิดรูป ${i + 1}/${list.length}`);
+    if (!busy) setStatus(`กำลังเปิดไฟล์ ${i + 1}/${list.length}`);
     try {
-      const d = await decodeBlob(it.file);
-      it.port = d.h > d.w;
-      it.thumb = scaled(d.src, d.w, d.h, THUMB);
-      if (current < 0 && items.includes(it)) { current = items.indexOf(it); markActive(); showPreview(scaled(d.src, d.w, d.h, PV)); }
-      d.close();
+      if (it.kind === 'video') {
+        const needPv = current < 0;
+        const v = await videoFrame(it.file, needPv ? PV : THUMB);
+        if (!items.includes(it)) continue;
+        it.port = v.H > v.W; it.dur = v.dur;
+        it.thumb = needPv ? scaled(v.frame, v.frame.width, v.frame.height, THUMB) : v.frame;
+        const badge = document.createElement('span'); badge.className = 'thumb-dur'; badge.textContent = '▶ ' + fmtDur(v.dur) + (v.codec ? ' ' + codecName(v.codec) : '');
+        it.btn.appendChild(badge);
+        if (current < 0) { current = items.indexOf(it); markActive(); showPreview(v.frame); }
+      } else {
+        const d = await decodeBlob(it.file);
+        it.port = d.h > d.w;
+        it.thumb = scaled(d.src, d.w, d.h, THUMB);
+        if (current < 0 && items.includes(it)) { current = items.indexOf(it); markActive(); showPreview(scaled(d.src, d.w, d.h, PV)); }
+        d.close();
+      }
       it.msg.remove();
       paintThumb(it);
       syncOrient();
@@ -577,7 +712,8 @@ async function select(i){
   const tok = ++selTok;
   try {
     let c;
-    { const d = await decodeBlob(it.file); c = scaled(d.src, d.w, d.h, PV); d.close(); }
+    if (it.kind === 'video') c = (await videoFrame(it.file, PV)).frame;
+    else { const d = await decodeBlob(it.file); c = scaled(d.src, d.w, d.h, PV); d.close(); }
     if (tok !== selTok) return;
     showPreview(c);
   } catch (e) { setStatus('เปิดไฟล์นี้ไม่ได้'); }
@@ -605,24 +741,27 @@ function clearAll(){
   items.length = 0; $('strip').innerHTML = ''; current = -1; resetStage(); refreshCounts(true);
 }
 function readyItems(){ return items.filter(it => !it.err && it.thumb); }
-function describe(list){ return `${list.length} รูป`; }
+function describe(list){
+  const nV = list.filter(it => it.kind === 'video').length, nI = list.length - nV;
+  return [nI ? `${nI} รูป` : '', nV ? `${nV} วิดีโอ` : ''].filter(Boolean).join(' ');
+}
 function refreshCounts(updateStatus){
   syncOrient();
   const ready = readyItems(), n = ready.length, bad = items.filter(it => it.err).length;
   $('stripHead').hidden = !items.length;
-  $('countLabel').textContent = items.length ? `${items.length} รูป` : '';
+  $('countLabel').textContent = items.length ? `${items.length} ไฟล์` : '';
   const all = $('saveAll'), each = $('saveEach');
   all.disabled = busy || n === 0;
-  all.textContent = shareFiles ? (n > 1 ? `ใส่ลายน้ำ ${n} รูป` : 'ใส่ลายน้ำ') : n > 1 ? `บันทึกทั้งหมด ${n} รูป (ZIP)` : 'บันทึกรูป';
+  all.textContent = shareFiles ? (n > 1 ? `ใส่ลายน้ำ ${n} ไฟล์` : 'ใส่ลายน้ำ') : n > 1 ? `บันทึกทั้งหมด ${n} ไฟล์ (ZIP)` : 'บันทึกไฟล์';
   each.hidden = noSave || n < 2 || shareFiles || !!pending; each.disabled = busy;
   all.hidden = noSave || !!pending;
   $('shareBtn').hidden = !pending; $('shareBtn').disabled = busy;
   $('zipBtn').hidden = !pending || pending.length < 2; $('zipBtn').disabled = busy;
-  if (pending) $('shareBtn').textContent = `บันทึก / แชร์ ${pending.length} รูป`;
+  if (pending) $('shareBtn').textContent = `บันทึก / แชร์ ${pending.length} ไฟล์`;
   $('cancelBtn').hidden = !busy;
   $('addBtn').disabled = $('clearBtn').disabled = busy;
   if (updateStatus && !busy && !noSave) {
-    setStatus(n ? `${describe(ready)} พร้อมใส่ลายน้ำ` + (bad ? ` (${bad} รูปเปิดไม่ได้ จะถูกข้าม)` : '') : (bad ? `${bad} รูปเปิดไม่ได้` : 'ยังไม่มีรูป'));
+    setStatus(n ? `${describe(ready)} พร้อมใส่ลายน้ำ` + (bad ? ` (${bad} ไฟล์เปิดไม่ได้ จะถูกข้าม)` : '') : (bad ? `${bad} ไฟล์เปิดไม่ได้` : 'ยังไม่มีไฟล์'));
   }
 }
 function setStatus(t){ $('status').textContent = t; }
@@ -708,7 +847,7 @@ async function doSave(name, blob){
       const code = err && err.code;
       if (code === 'rate_limited' && attempt < 3) { setStatus('รอหน้าต่างบันทึกก่อนหน้าปิดก่อน…'); await new Promise(r => setTimeout(r, 1500)); continue; }
       if (code === 'declined') { setStatus('ยกเลิกการบันทึกแล้ว'); return 'declined'; }
-      if (code === 'too_large') { setStatus('ไฟล์ใหญ่เกินที่แอปนี้บันทึกได้ ลองบันทึกทีละรูป หรือเปิดหน้านี้บนคอม'); return 'fail'; }
+      if (code === 'too_large') { setStatus('ไฟล์ใหญ่เกินที่แอปนี้บันทึกได้ ลองบันทึกทีละไฟล์ หรือเปิดหน้านี้บนคอม'); return 'fail'; }
       setStatus('บันทึกไฟล์ไม่สำเร็จในมุมมองนี้ ลองเปิดหน้านี้ใน claude.ai'); return 'fail';
     }
   }
@@ -739,19 +878,27 @@ async function exportAll(asZip){
   clearPending();
   busy = true; cancelReq = false; $('side').inert = true; refreshCounts(false); syncUI(true);
   const outs = [], fails = [], names = new Set();
-  let saved = 0, stopped = false;
+  let saved = 0, silent = 0, stopped = false, fellBack = 0, fbWant = '', fbUsed = '';
   const cv = document.createElement('canvas'), ctx = cv.getContext('2d');
   try {
     for (let i = 0; i < list.length; i++) {
       if (cancelReq) { stopped = true; break; }
       const it = list[i], base = i / list.length, span = 1 / list.length;
-      setStatus(`กำลังใส่ลายน้ำ ${i + 1}/${list.length}`); setProgress(base);
+      const label = it.kind === 'video' ? 'วิดีโอ' : 'รูป';
+      setStatus(`กำลังใส่ลายน้ำ${label} ${i + 1}/${list.length}`); setProgress(base);
       let out;
       try {
-        const r = await renderImage(it, cv, ctx);
-        out = { name:uniq(names, outName(it.name, r.ext)), blob:r.blob };
+        if (it.kind === 'video') {
+          const r = await convertVideo(it.file, p => { setProgress(base + p * span); setStatus(`กำลังใส่ลายน้ำวิดีโอ ${i + 1}/${list.length} (${Math.round(p * 100)}%)`); });
+          if (r.noAudio) silent++;
+          if (r.fellBack) { fellBack++; fbWant = r.want; fbUsed = r.codec; }
+          out = { name:uniq(names, outName(it.name, 'mp4')), blob:r.blob };
+        } else {
+          const r = await renderImage(it, cv, ctx);
+          out = { name:uniq(names, outName(it.name, r.ext)), blob:r.blob };
+        }
       } catch (e) {
-        if (cancelReq) { stopped = true; break; }
+        if (cancelReq || (e && e.name === 'ConversionCanceledError')) { stopped = true; break; }
         console.warn('BatchMark:', it.name, e);
         fails.push(it.name); continue;
       }
@@ -765,28 +912,29 @@ async function exportAll(asZip){
       await tick();
     }
     setProgress(1);
-    const notes = fails.length ? ` ข้าม ${fails.length} รูปที่ทำไม่ได้` : '';
+    const notes = (fails.length ? ` ข้าม ${fails.length} ไฟล์ที่ทำไม่ได้` : '') + (silent ? ` (${silent} วิดีโอไม่มีเสียงในไฟล์ที่ได้)` : '')
+      + (fellBack ? ` (${fellBack} วิดีโอใช้ ${codecName(fbUsed) || 'codec อื่น'} แทน เพราะเครื่องนี้เข้ารหัส ${codecName(fbWant)} ไม่ได้)` : '');
     if (cancelReq) { setStatus('ยกเลิกแล้ว' + (saved ? ` บันทึกไปแล้ว ${saved} ไฟล์` : '')); return; }
     if (shareFiles) {
       if (stopped) return;
-      if (!outs.length) { setStatus('ทำรูปไม่สำเร็จ รูปอาจใหญ่เกินที่เครื่องนี้รองรับ'); return; }
+      if (!outs.length) { setStatus('ทำไฟล์ไม่สำเร็จ ไฟล์อาจใหญ่เกินที่เครื่องนี้รองรับ'); return; }
       pending = outs.splice(0);
-      setStatus(`เสร็จแล้ว ${pending.length} รูป แตะ “บันทึก / แชร์” แล้วเลือกบันทึกลงคลังรูปหรือไฟล์` + notes);
+      setStatus(`เสร็จแล้ว ${pending.length} ไฟล์ แตะ “บันทึก / แชร์” แล้วเลือกบันทึกลงคลังรูปหรือไฟล์` + notes);
       return;
     }
     if (zipMode) {
       if (stopped) return;
-      if (!outs.length) { setStatus('ทำรูปไม่สำเร็จ รูปอาจใหญ่เกินที่เบราว์เซอร์นี้รองรับ'); return; }
+      if (!outs.length) { setStatus('ทำไฟล์ไม่สำเร็จ ไฟล์อาจใหญ่เกินที่เบราว์เซอร์นี้รองรับ'); return; }
       const zip = await makeZip(outs);
       outs.length = 0;
       setStatus('พร้อมบันทึก ZIP');
       const r = await doSave(`batchmark-${stamp()}.zip`, zip);
       if (r === 'saved') setStatus('บันทึก ZIP แล้ว' + notes);
     } else if (!stopped) {
-      setStatus(saved ? `บันทึกแล้ว ${saved} รูป` + notes : 'ทำรูปไม่สำเร็จ รูปอาจใหญ่เกินที่เบราว์เซอร์นี้รองรับ');
+      setStatus(saved ? `บันทึกแล้ว ${saved} ไฟล์` + notes : 'ทำไฟล์ไม่สำเร็จ ไฟล์อาจใหญ่เกินที่เบราว์เซอร์นี้รองรับ');
     }
   } catch (e) {
-    setStatus(e && e.code === 'zip_too_big' ? 'ZIP ใหญ่เกิน 4 GB ลองบันทึกทีละรูป' : 'เกิดข้อผิดพลาด ลองลดจำนวนรูปต่อครั้ง หรือบันทึกทีละรูป');
+    setStatus(e && e.code === 'zip_too_big' ? 'ZIP ใหญ่เกิน 4 GB ลองบันทึกทีละไฟล์' : 'เกิดข้อผิดพลาด ลองลดจำนวนไฟล์ต่อครั้ง หรือบันทึกทีละไฟล์');
   } finally {
     busy = false; cancelReq = false; $('side').inert = false;
     setTimeout(() => setProgress(0), 600); refreshCounts(false); syncUI(true);
@@ -844,7 +992,7 @@ function syncOrient(){
   document.querySelectorAll('#orientSeg button').forEach(b => {
     const o = b.dataset.orient, n = o === 'port' ? nP : nL;
     b.setAttribute('aria-pressed', String(o === editO));
-    b.textContent = (o === 'port' ? 'แนวตั้ง' : 'แนวนอน') + (ok.length ? ` ${n} รูป` : '');
+    b.textContent = (o === 'port' ? 'แนวตั้ง' : 'แนวนอน') + (ok.length ? ` ${n} ไฟล์` : '');
     b.disabled = ok.length > 0 && n === 0 && o !== editO;
   });
 }
@@ -933,13 +1081,14 @@ function syncUI(skipInputs){
   $('marginField').classList.toggle('is-off', S.tile || P.anchor === 'custom');
   pos.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(!S.tile && b.dataset.anchor === P.anchor)));
   const A = P.anchor, lab = A === 'custom' ? '' : anchorLabel(A), posLocked = isLocked('pos');
-  $('posNote').textContent = S.tile ? 'ปิดอยู่ระหว่างปูลายน้ำทั้งรูป'
-    : (A === 'custom' ? `วางเอง ทุกรูป${editO === 'port' ? 'แนวตั้ง' : 'แนวนอน'}ใช้สัดส่วนเดียวกัน` : lab)
+  $('posNote').textContent = S.tile ? 'ปิดอยู่ระหว่างปูลายน้ำทั้งไฟล์'
+    : (A === 'custom' ? `วางเอง ทุกไฟล์${editO === 'port' ? 'แนวตั้ง' : 'แนวนอน'}ใช้สัดส่วนเดียวกัน` : lab)
       + (posLocked ? ' (ล็อกอยู่)' : '');
   $('copyPos').textContent = editO === 'port' ? 'ใช้ตำแหน่งเดียวกับแนวนอน' : 'ใช้ตำแหน่งเดียวกับแนวตั้ง';
-  const pvLocked = pvSrc ? isLocked('pos', orientOf(pv.width, pv.height)) : false;
-  $('stageHint').textContent = S.tile ? 'ปูลายน้ำทั้งรูปอยู่ ปรับขนาด ความเข้ม และระยะห่างได้ที่แผงตั้งค่า'
+  const cur = items[current], pvLocked = pvSrc ? isLocked('pos', orientOf(pv.width, pv.height)) : false;
+  $('stageHint').textContent = S.tile ? 'ปูลายน้ำทั้งไฟล์อยู่ ปรับขนาด ความเข้ม และระยะห่างได้ที่แผงตั้งค่า'
     : pvLocked ? 'ตำแหน่งถูกล็อกอยู่ ปลดล็อกได้ที่หมวดขนาดและตำแหน่ง'
+    : cur && cur.kind === 'video' ? 'ตัวอย่างจากเฟรมช่วงต้นคลิป ลายน้ำจะอยู่ตำแหน่งนี้ตลอดคลิป แตะหรือลากเพื่อย้าย'
     : 'แตะหรือลากบนรูปเพื่อย้ายลายน้ำ';
   pv.classList.toggle('nodrag', S.tile || pvLocked);
   syncOrient();
@@ -1028,6 +1177,7 @@ $('saveEach').addEventListener('click', () => exportAll(false));
 $('cancelBtn').addEventListener('click', () => {
   if (!busy) return;
   cancelReq = true; setStatus('กำลังยกเลิก…');
+  if (currentConv) currentConv.cancel().catch(() => {});
 });
 
 $('shareBtn').addEventListener('click', async () => {
